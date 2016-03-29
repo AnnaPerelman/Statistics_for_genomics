@@ -1,349 +1,344 @@
 ---
 title: "Lab 1: Gene expression microarrays and differential expression"
-author: "Jean-Philippe Fortin, Leslie Myint"
-date: "April 3, 2014"
-output: ioslides_presentation
+author: "Leslie Myint, Jean-Philippe Fortin"
+date: "March 29, 2016"
+package: "`r pkg_ver('BiocStyle')`"
+output: 
+  BiocStyle::html_document
 ---
 
-## Overview
+# Overview
 
-Today we will
+We will be looking at data from a study of gene expression in chronic lymphocytic leukemia (CLL). The authors were interested in identifying genes that are differentially expressed in stable versus progressive cancers.
 
-- become more familiar with Affymetrix microarray data
-- produce exploratory and diagnostic plots (boxplots, densities, MA plots)
-- normalize expression data (quantile normalization, RMA)
-- perform a differential analysis with limma (Linear model, Empirical Bayes)
-- correct for multiple testing (Bonferroni, Benjamini-Hochberg)
+# Loading packages and data
 
-## Loading packages
+If you don't already have the packages installed:
 
-First load the **affy** and **affydata** packages from Bioconductor: 
+```{r eval=FALSE}
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("CLL", "affy", "limma", "hgu95av2.db"))
+install.packages("scales")
+```
 
-```{r,echo,results='hide', message=FALSE, warning=FALSE}
+Load the packages:
+
+```{r warning=FALSE, message=FALSE}
+library(CLL)
 library(affy)
-library(affydata)
 ```
 
-We will use a dataset containing 4 Affymetrix samples:
+What forms of data are available to us?
 
 ```{r}
-data(Dilution)
-pData(Dilution) # Phenotype information
+data(package = "CLL")
 ```
 
-## Raw intensities
-
-The loaded Affymetrix arrays contain two intensities for each probe: one for perfect match **(PM)** and one for mismatch **(MM)**. We will only work with PM intensities.
-
-```{r, message=FALSE, warning=FALSE}
-# To obtain the matrix of PM intensities:
-raw <- pm(Dilution)
-head(raw, 4)
-```
-Columns are samples, rows are probes.
-
-## Log-intensity densities
-
-Let's plot the density of the log-intensities for each sample:
-
-```{r, echo=FALSE}
-library(RColorBrewer) # Optional
-palette(brewer.pal(8,"Set1"))
-```
+We see that there are both raw and processed forms of data. **CLLbatch** is a raw data object. **disease** contains metadata information. **sCLLex** is an **ExpressionSet** object which means that it has gone through some processing. There are also some analysis results that we won't be using. Let's get the first objects into our R workspace:
 
 ```{r}
-log.raw <- log2(raw)
-plot(density(log.raw[,1]), ylim = c(0,1), xlab = "",main = "", lwd = 3)
-for (i in 2:4) {
-	lines(density(log.raw[,i]), col = i, lwd = 3)
-}
+data(CLLbatch, sCLLex, disease, package = "CLL")
 ```
 
-## Log-Intensities Sample 1 vs Sample 2
+# Exploratory data analysis
 
-How do the intensities of Sample 1 compare to the intensities of Sample 2?
+We can get some general information about the experiment by printing the **AffyBatch** object:
+
+```{r warning=FALSE, message=FALSE}
+CLLbatch # same as print(CLLbatch)
+```
+
+What sample classes do the arrays belong to?
 
 ```{r}
-plot(log.raw[,1], log.raw[,2], pch = 16, cex = 0.5)
-abline(a = 0, b = 1, col = "deepskyblue", lwd = 4)
+disease
 ```
 
-## MA plot (Bland–Altman plot)
+For ease of exploration and analysis later, let's store the samples that belong to the two classifications of CLL (stable and progressive):
 
 ```{r}
-avg  <- (log.raw[,1] + log.raw[,2])/2
-diff <-  log.raw[,1] - log.raw[,2]
-plot(avg, diff, pch = 16, cex = 0.5)
-abline(h = 0, col = "deepskyblue", lwd = 4)
+samplesProg <- which(disease$Disease=="progres.")
+samplesStable <- which(disease$Disease=="stable")
 ```
 
-## Lowess curve
+## Microarray images
 
-http://simplystatistics.org/2014/02/13/loess-explained-in-a-gif/loess/
+How do the microarray images look? Are there any obvious spatial artifacts?
 
-```{r, echo=FALSE}
-plot(avg, diff, pch = 16, cex = 0.5)
-abline(h = 0,col = "deepskyblue", lwd = 4)
-lowess.curve <- lowess(x = avg, y = diff, f = 0.05)
-lines(lowess.curve, col = "deeppink", lwd = 4)
+```{r fig.width=8, fig.height=12}
+# Plot all 24 of the array images (can be slow)
+par(mfrow = c(6,4), mar = c(2,2,2,1))
+image(CLLbatch)
 ```
 
-## Quantile normalization
+```{r fig.width=8, fig.height=4}
+# Plot the first 4 progressive and the first 4 stable samples
+par(mfrow = c(2,4), mar = c(2,2,2,1))
+image(CLLbatch[, c(samplesProg[1:4], samplesStable[1:4])])
+```
+
+## Intensity distributions
+
+We can also look at the distributions of log-intensities across the arrays:
 
 ```{r}
-# I usually use the quantile normalization implemented
-# in the package preprocessCore
-qn <- preprocessCore::normalize.quantiles(log.raw)
-
-plot(density(qn[,1]), ylim = c(0,1), xlab = "",main = "", lwd = 3)
-for (i in 2:4) {
-	lines(density(qn[,i]), col = i, lwd = 3)
-}
+par(mfrow = c(1,1), mar = c(4,4,3,1))
+hist(CLLbatch)
+boxplot(CLLbatch)
 ```
 
-## MA plot after quantile normalization
-
-```{r, echo=FALSE}
-avg  <- (qn[,1] + qn[,2])/2
-diff <-  qn[,1] - qn[,2]
-plot(avg, diff, pch=16, cex=0.5)
-abline(h=0,col="deepskyblue", lwd=4)
-lowess.curve <- lowess(x = avg, y = diff, f = 0.05)
-lines(lowess.curve, col = "deeppink", lwd = 4)
-```
-
-The lowess curve overlaps the $y = 0$ line.
-
-## Exercise 1
-
-- Read about lowess normalization. 
-- Normalize samples 1 and 2 using the lowess curve that we computed
-- How does the MA plot look like after normalization? Does it look better than quantile normalization?
-
-
-## Scatterplot smoothing
-
-```{r, echo=FALSE}
-avg  <- (log.raw[,1] + log.raw[,2])/2
-diff <-  log.raw[,1] - log.raw[,2]
-lowess.curve <- lowess(x = avg, y = diff, f = 0.05)
-```
-
-The function **smoothScatter** can be used to smooth the scatter plot:
-
-```{r, warning=FALSE, message=FALSE}
-smoothScatter(avg, diff, ylim = c(-2,2))
-lines(lowess.curve, col = "deeppink", lwd = 3)
-abline(h=0, col = "deepskyblue", lwd=3)
-```
-
-## Transparency 
-
-```{r}
-library(scales)
-plot(avg, diff, pch = 16, cex = 0.5, col = alpha("black", 0.1))
-lines(lowess.curve, col = "deeppink", lwd = 3)
-```
-
-## Probe sets
-
-A set of probes targeting the same gene is called a **probeset** (http://www.affymetrix.com/support/help/faqs/mouse_430/faq_8.jsp). First, let's get the probe name for each row of the PM (or MM) matrix:
-
-```{r}
-probe.names <- probeNames(Dilution)
-head(probe.names, 20)
-```
-
-The first 16 rows of the PM matrix are probes that belong to the same probeset ("100_g_at").
-
-
-## Gene ids
-
-To obtain the list of probeset ids:
-
-```{r,eval=FALSE}
-geneNames(Dilution)
-# which is equivalent to
-unique(probe.names)
-```
-
-To get the PM intensities for a given probeset (here the 20th):
-
-```{r}
-x <- pm(Dilution, geneNames(Dilution)[20])
-head(x, 3)
-```
-
-## Exercise 2
-
-Can you obtain the median polished intensities for the first probeset ? (look at the class notes to see an example of the median polish algorithm)
-
-## RMA
-
-RMA (Robust Multi-array Average) performs background correction, quantile normalization, and applies the median polish algorithm to summarize the probeset intensities. Very simple command: 
-
-```{r}
-eset <- rma(Dilution)
-nrow(eset)
-```
-
-## RMA
-
-The **rma** command returns an ExpressionSet.
-
-```{r}
-eset
-```
-
-## RMA
-
-Use **exprs** to obtain the summarized expression measures:
-
-```{r}
-e <- exprs(eset)
-head(e)
-dim(e)
-```
-
-## Affy diagnostic plots
-
-The **affy** package contains convenient plot commands to draw boxplots, densities and MA plots.
-
-```{r, eval=FALSE}
-boxplot(Dilution)
-hist(Dilution)
-MAplot(Dilution, pairs=TRUE)
-MAplot(Dilution, pairs=TRUE, plot.method="smoothScatter")
-```
-
-## Boxplots
-
-```{r}
-boxplot(Dilution)
-```
+From the density estimates, we see a typical shape that resembles the mixture of a normal and an exponential distribution.
 
 ## MA plots
 
-```{r, warning=FALSE, message=FALSE}
-MAplot(Dilution, pairs=TRUE, plot.method="smoothScatter")
+MA plots of individual arrays versus individual arrays:
+
+```{r fig.width=8, fig.height=8, warning=FALSE, message=FALSE}
+par(mfrow = c(4,4), mar = c(4,4,3,1))
+MAplot(CLLbatch[, c(samplesProg[1:2], samplesStable[1:2])], pairs = TRUE, plot.method = "smoothScatter")
 ```
 
-## Differential analysis with limma
+We can make an MA plot of one group versus the other using the perfect match (PM) data in the **CLLbatch** object. First let's get acquainted with the object containing the PM data.
 
-**Goal:** Find genes that have statistically significant different abundances between two (or more) groups. Our dataset only has 4 samples, with no interesting biological treatment group, but we will use it for demonstration purpose. We will use the package **limma**:
+```{r}
+pmdata <- pm(CLLbatch)
+head(pmdata)
+dim(pmdata)
+all.equal(paste0(disease$SampleID, ".CEL"), colnames(pmdata))
+```
 
-```{r, warning=FALSE, message=FALSE}
+We see that there are ``r nrow(pmdata)`` probes (rows) and that the ordering of the samples in the **disease** metadata object is the same as in the columns of the **pmdata** object. Now we can continue with the calculations needed to make the group vs. group MA plot. Instead of comparing one sample's expression levels to another sample's expression levels, we will compare the average expression levels in one group to those in the other group.
+
+```{r fig.width=8}
+logpmdata <- log2(pmdata + 1)
+pmdataProg <- logpmdata[,samplesProg]
+pmdataStable <- logpmdata[,samplesStable]
+meanProg <- rowMeans(pmdataProg)
+meanStable <- rowMeans(pmdataStable)
+A <- (meanProg + meanStable)/2
+M <- meanProg - meanStable
+library(scales) # Need the scales package for alpha blending
+par(mfrow = c(1,2))
+plot(A, M, pch = 16, col = alpha("black", 0.1), xlab = "Average log2 expression", ylab = "Log2 expression ratio", main = "Progressive vs. stable")
+abline(h = 0, lwd = 3, col = "deepskyblue")
+lo <- lowess(A, M, f = 0.2)
+lines(lo, lwd = 3, col = "deeppink")
+# Can also use smoothScatter
+smoothScatter(A, M, xlab = "Average log2 expression", ylab = "Log2 expression ratio", main = "Progressive vs. stable")
+lines(lo, col = "deeppink", lwd = 3)
+abline(h = 0, col = "deepskyblue", lwd = 3)
+```
+
+The cloud is clearly not centered about the $y = 0$ line, but this might be what we expect in cancer.
+
+## Probe(set) names
+
+Each row of **pmdata** corresponds to a probe, and each probe belongs to a probeset (a set of probes targeting the same gene). We can get the probeset names with **geneNames** and the probeset that each probe belongs to with **probeNames**.
+
+```{r}
+pn <- probeNames(CLLbatch)
+gn <- geneNames(CLLbatch)
+identical(unique(pn), gn)
+length(pn)==nrow(pmdata)
+head(pn) # The first few probes all belong to the same probeset
+head(gn)
+```
+
+More information about the syntax for these probeset names can be found here: [http://www.affymetrix.com/support/help/faqs/mouse_430/faq_8.jsp](http://www.affymetrix.com/support/help/faqs/mouse_430/faq_8.jsp). We can obtain a subset of the perfect match (PM) or mismatch (MM) intensities corresponding to certain genes (probesets):
+
+```{r}
+pm(CLLbatch, gn[1])
+mm(CLLbatch, gn[c(1,3)])
+```
+
+# Running processing algorithms
+
+If you want to run RMA or MAS5 (the Affymetrix method), the quickest way to get a processed data object is to run:
+
+```{r eval=FALSE}
+eset <- rma(CLLbatch)
+eset <- mas5(CLLbatch)
+```
+
+To control exactly what methods are used at each stage of processing, we can use **expresso**:
+
+```{r warning=FALSE}
+eset <- expresso(CLLbatch, normalize.method = "quantiles", bgcorrect.method = "rma", pmcorrect.method = "pmonly", summary.method = "liwong")
+```
+
+More information on different methods for normalization (**normalize.method**), background correction (**bgcorrect.method**), probe-specific background correction (**pmcorrect.method**), and probe set summarization (**summary.method**) can be found in section 3.3 of the [affy overview vignette](https://bioconductor.org/packages/release/bioc/vignettes/affy/inst/doc/affy.pdf) and in the [affy built-in methods vignette](https://bioconductor.org/packages/release/bioc/vignettes/affy/inst/doc/builtinMethods.pdf).
+
+In particular calling the **rma** function is equivalent to using **normalize.method = "quantiles", bgcorrect.method = "rma", pmcorrect.method = "pmonly", summary.method = "medianpolish"** and calling the **mas5** function is equivalent to using **normalize.method = "constant", bgcorrect.method = "mas", pmcorrect.method = "mas", summary.method = "mas"**.
+
+## Evaluating impact of processing
+
+The **eset** object is an **ExpressionSet** object containing metadata information and processed expression values. We can extract the processed expression values with **exprs**:
+
+```{r}
+processed <- exprs(eset)
+head(processed)
+dim(processed)
+nrow(processed)==length(gn)
+```
+
+Both boxplots and density plots show that processing causes the intensity distributions to be much more similar.
+
+```{r fig.width=8}
+par(mfrow = c(1,2))
+boxplot(CLLbatch, main = "Before processing")
+boxplot(log2(processed + 1), main = "After processing")
+```
+
+```{r fig.width=8}
+par(mfrow = c(1,2))
+hist(CLLbatch, main = "Before processing")
+plotDensity(log2(processed + 1), main = "After processing")
+```
+
+We also see that the MA plot is more symmetric about $y = 0$.
+
+```{r fig.width=8}
+A.pre <- rowMeans(logpmdata)
+M.pre <- rowMeans(logpmdata[,samplesProg]) - rowMeans(logpmdata[,samplesStable])
+par(mfrow = c(1,2))
+plot(A.pre, M.pre, pch = 16, col = alpha("black", 0.1), xlab = "Average log2 expression", ylab = "Log2 expression ratio", main = "Progressive vs. stable (before)", ylim = c(-2,2))
+abline(h = 0, lwd = 3, col = "deepskyblue")
+lines(lowess(A.pre, M.pre, f = 0.2), lwd = 3, col = "deeppink")
+A.post <- rowMeans(log2(processed + 1))
+M.post <- rowMeans(log2(processed[,samplesProg] + 1)) - rowMeans(log2(processed[,samplesStable] + 1))
+plot(A.post, M.post, pch = 16, col = alpha("black", 0.1), xlab = "Average log2 expression", ylab = "Log2 expression ratio", main = "Progressive vs. stable (after)", ylim = c(-2,2))
+abline(h = 0, lwd = 3, col = "deepskyblue")
+lines(lowess(A.post, M.post, f = 0.2), lwd = 3, col = "deeppink")
+```
+
+# Differential expression analysis
+
+**Goal:** Find genes that have statistically significant different abundances between two (or more) groups. In this case, the two conditions are progressive and stable chronic lymphocytic leukemia. We will use the package **limma** for analysis, and we will use the processed data from the original study which is contained in the **sCLLex** object.
+
+```{r warning=FALSE, message=FALSE}
 library(limma)
+eset <- sCLLex
 ```
 
-First let's define a comparison group:
+## Linear model setup
+
+For each gene, we want to fit the model $y_{i} = \beta_0 + \beta_1 x_i$ where $y_i$ is the gene's expression value for sample $i$, $\beta_0$ is an intercept, $x_i$ is a dummy variable for group, and $\beta_1$ is the coefficient associated with the change in expression between the two groups. Our goal is to test $H_0: \beta_1 = 0$ for each gene.
+
+## Create design matrix
+
+We extract the phenotype information and use this to construct our linear regression design matrix.
 
 ```{r}
-pd <- pData(Dilution)
-groups <- as.factor(pd$liver)
+pheno <- pData(eset)
+groups <- as.factor(pheno$Disease)
+designMat <- model.matrix(~groups)
+colnames(designMat) <- c("Intercept","Disease")
+designMat
 ```
 
-## Linear model
+## Linear model fitting
 
-For each gene, we want to fit the model $$y_{i} = \beta_0 + \beta_1 x_i$$ where $y_i$ is the expression value for sample $i$, $\beta_0$ is an intercept, $x_i$ is a dummy variable equal to 0 for the first group and 1 for the second group, and $\beta_1$ is the coefficient associated with the change in expression between the two groups. Our goal is to test whether or not $\beta_1 = 0$. 
-
-## Differential expression analysis
-First, we need to construct a design matrix:
-
-```{r}
-design.matrix <- model.matrix(~groups)
-colnames(design.matrix) <- c("Intercept","Treatment")
-design.matrix
-```
-
-## Linear model
 We can fit the linear models using the **lmFit** function in **limma**. All we need is an expression matrix containing the summarized intensities and the design matrix:
 
 ```{r}
-fit <- lmFit(object = e, design = design.matrix)
+fit <- lmFit(object = eset, design = designMat)
 ```
 
-**fit** is an object containing the results of the fits. For instance, one can retrieve the coefficients of the linear model with
+**fit** is an object containing the results of the fits. For instance, we can retrieve the coefficients of the linear model with
 
 ```{r}
 head(fit$coefficients)
 ```
 
-## Linear model
-Note that the **fit** object does not contain any statistical test nor p-value. For each gene, we fitted the model $$y_{i} = \beta_0 + \beta_1 x_i$$ where $y_i$ is the expression value for sample $i$, $\beta_0$ is an intercept, $x_i$ is a dummy variable equal to 0 for the first group and 1 for the second group, and $\beta_1$ is the coefficient associated with the change in expression between the two groups. Our goal is to test whether or not $\beta_1 = 0$. The classical t-statistic is
-$$ t = \frac{\hat{\beta_1}}{\frac{s}{\sqrt{n}}}$$
+## Empirical Bayes variance estimation
 
-## Classical t-statistic
-
-How can we obtain the t-statistics from the object returned by **lmFit()**?
-
-```{r}
-beta <- fit$coefficients[,2]
-s <- fit$stdev.unscaled[,2]*fit$sigma
-n <- 4
-t <- (beta*sqrt(n))/s
-```
-Can you extract the p-value for each gene?
-
-## Empirical Bayes
-
-Computing classical t-statistics for experiments with a small number of arrays is unstable. The Empirical Bayes method implemented in **limma** borrows information across genes to make the analysis more stable. Precisely, the function **eBayes** computes moderated t-statistics by estimating the standard errors using empirical Bayes moderation. 
+Computing classical t-statistics for experiments with a small number of arrays is unstable. The empirical Bayes method implemented in **limma** borrows information about expression variability across genes to make the analysis more stable. Specifically, the function **eBayes** computes moderated t-statistics by estimating the standard errors using empirical Bayes moderation. 
 
 ```{r}
 fit2 <- eBayes(fit)
 names(fit2)
 ```
 
-## p-value histogram
+## Results
 
-Let's create a histogram of the p-values:
+Let's look at the distribution of p-values:
 
 ```{r}
-hist(fit2$p.value[,2])
+par(mfrow = c(1,1))
+hist(fit2$p.value[,2], xlab = "p-value", main = "")
 ```
 
-## Volcano plot
-A **volcano plot** is used to plot significance (e.g.instance p-value) versus fold-change (e.g. diff. expression coefficient). For our dataset, one can produce a volcano plot as follows:
+A **volcano plot** is used to plot significance (e.g.instance p-value) versus fold-change (e.g. diff. expression coefficient):
 
 ```{r}
 p <- fit2$p.value[,2]
-plot(fit2$coefficients[,2], -log2(p), pch=16, cex=0.3)
+plot(fit2$coefficients[,2], -log2(p), pch = 20, cex = 0.3, xlab = "Log fold change")
+abline(v = c(-1,1), lwd = 3, col = "darkorange")
+abline(h = 5, lwd = 3, col = "darkorange")
 ```
 
-## Volcano plot
-**limma** has a command to produce a volcano plot on a fitted object produced by the  **eBayes** command:
+**limma** has a command to produce a volcano plot on a fitted object produced by the **eBayes** command:
 
 ```{r}
-volcanoplot(fit2, coef=2) 
+volcanoplot(fit2, coef = 2)
 ```
 
-## Volcano plots
+## Multiple testing adjustment
 
-- Why did we use the negative logarithm of the p-values instead of the raw p-values?
-- The two previous volcano plots look very similar, but are different. Why is that? Type in **?volcanoplot** in the R console to get information about what **volcanoplot** does. 
-
-## Multiple comparison
-- The command **p.adjust()** returns adjusted p-values for different methods. (see **?p.adjust**)
-- For instance, to correct for Family-Wise Error Rate (FWER), one can use Bonferroni correction:
+Because we are testing thousands of hypotheses, we need to correct our p-values for this multiplicity of tests. **p.adjust()** returns adjusted p-values for different methods:
 
 ```{r}
-b.pvalues <- p.adjust(p, method = "bonferroni" )
-```
-
-- To correct for False Discovery Rate (FDR), one can use the Benjamini-Hochberg correction method:
-
-```{r}
+b.pvalues <- p.adjust(p, method = "bonferroni")
+summary(b.pvalues)
+head(sort(b.pvalues))
 fdr.pvalues <- p.adjust(p, method = "fdr")
 summary(fdr.pvalues)
+head(sort(fdr.pvalues))
 ```
 
-## Exercise 3
-- Repeat the differential expression analysis, but this time testing for the difference between samples from scanner 1 and samples from scanner 2 (see phenotype information with **pData(Dilution)**). Use RMA to process the data. 
-- Produce a histogram of the p-values (computed with **eBayes**)
-- Repeat the analysis but this time with data that haven't been background corrected and that are not normalized. Use the median polish algorithm for the probeset summarization. Use the function **expresso()** in the **affy** package to produce the expression matrix. 
-- What can you tell about the p-values produced with the RMA-corrected dataset? What can you tell about the p-values produced with the uncorrected data?
+We can also use the function **topTable** in the **limma** package to return the top differentially expressed genes. For instance, to return the top 100 genes that pass an uncorrected p-value threshold of $0.05$, we can use
 
+```{r}
+table <- topTable(fit2, coef = 2, adjust.method = "none", p.value = 0.05, number = 100)
+head(table)
+```
 
+# Biological significance
 
+We still don't have the names of the genes associated with our probesets. We only have probset IDs. To map these probesets to genes, we need first to load the annotation package containing the relevant information for this Affymetrix array: 
 
+```{r, warning=FALSE, message=FALSE}
+library(hgu95av2.db)
+columns(hgu95av2.db) # To see the info stored in the annotation
+```
 
+To find the gene symbol corresponding to the top 100 genes:
+
+```{r, warning=FALSE, message=FALSE}
+probeNames <- rownames(table) # Names of the top 100 probes
+info <- select(hgu95av2.db, probeNames, c("SYMBOL"), "PROBEID")
+# Other names from columns(hgu95av2.db) can be added to the c("SYMBOL") above:
+# info <- select(hgu95av2.db, probeNames, c("SYMBOL", "ENTREZID"), "PROBEID")
+head(info)
+dim(info)
+```
+
+Wait, we had ``r nrow(table)`` probes, and now we have ``r nrow(info)`` gene symbols. What's wrong? It seems that some probesets map to more than one gene:
+
+```{r}
+table(table(info$PROBEID))
+```
+
+93 probesets map to 1 gene, 6 probesets map to 2 genes, and 1 probeset maps to 5 genes. Let's use only the first gene mapped for each probeset:
+
+```{r}
+info <- info[match(probeNames, info$PROBEID),]
+dim(info)
+```
+
+We could have also decided to remove these probesets or something else depending on our downstream analysis plan. Add the gene symbol information to our table:
+
+```{r}
+table <- cbind(table, info$SYMBOL)
+head(table)
+```
