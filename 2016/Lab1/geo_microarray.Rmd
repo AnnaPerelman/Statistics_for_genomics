@@ -1,0 +1,76 @@
+---
+title: "Working with microarray datasets in GEO"
+author: "Leslie Myint"
+date: "April 5, 2016"
+package: "`r pkg_ver('BiocStyle')`"
+output: 
+  BiocStyle::html_document
+---
+
+# Download relevant information from GEO
+
+As an example, I will look at getting information from a study of melanoma (Accession ID: GDS5085). On the [download page](http://www.ncbi.nlm.nih.gov/geo/download/?acc=GDS5085). To get phenotype information, I want to download the first file GDS5085_full.soft.gz under the heading **DataSet Full SOFT file**. This file also contains processed data. But since I also want the raw CEL files, I also want to download the last file GSE42872_RAW.tar under the heading **Supplementary data for Series GSE42872 (contains CEL files)**. I'm going to save these to a directory named "geo" on my Desktop. Double clicking the GSE42872_RAW.tar file unpacks it and creates a GSE42872_RAW subdirectory containing the CEL files.
+
+# Download and load packages
+
+**GEOquery** is a useful package for getting information about GEO datasets. If you don't already have GEOquery downloaded:
+
+```{r eval=FALSE}
+source("https://bioconductor.org/biocLite.R")
+biocLite("GEOquery")
+```
+
+Load required package:
+
+```{r}
+library(GEOquery)
+library(affy)
+```
+
+# Reading expression data
+
+For reading CEL files, helpful information can be found in the [affy vignette](http://bioconductor.org/packages/release/bioc/vignettes/affy/inst/doc/affy.pdf) and the [affy reference manual](http://bioconductor.org/packages/release/bioc/manuals/affy/man/affy.pdf).
+
+```{r}
+# Navigate to the folder containing the .CEL files
+setwd("~/Desktop/geo/")
+# Get names of every file in the subdirectory containing the CEL files
+files <- list.files("GSE42872_RAW/", full.names = TRUE)
+# Read data
+abatch <- read.affybatch(filenames = files)
+```
+
+The `abatch` object is analogous to the `CLLbatch` object from Lab 1. If you try printing the `abatch` object for the first time, R may automatically download an annotation package associated with the machine that generated your data. For me, the `hugene10stv1cdf` annotation package was downloaded.
+
+```{r}
+abatch
+```
+
+# Getting metadata
+
+The `getGEO` function in the **GEOquery** package can extract metadata information from the downloaded SOFT file.
+
+```{r}
+setwd("~/Desktop/geo/")
+gds <- getGEO(filename = "GDS5085_full.soft.gz")
+pheno <- Columns(dataTable(gds))
+pheno
+```
+
+The `pheno` object is analogous to the `disease` object from Lab 1. I can see the column names of this data frame with:
+
+```{r}
+colnames(pheno)
+```
+
+So I can access the sample IDs with
+
+```{r}
+pheno$sample # analogous to disease$SampleID from Lab 1
+```
+
+And I can access the sample classifications with
+
+```{r}
+pheno$agent # analogous to disease$Disease from Lab 1
+```
