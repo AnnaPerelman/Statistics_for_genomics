@@ -11,6 +11,20 @@ output:
 
 We will be looking at data from a study of gene expression in chronic lymphocytic leukemia (CLL). The authors were interested in identifying genes that are differentially expressed in stable versus progressive cancers.
 
+# Reading your own data
+
+Helpful information can be found in the [affy vignette](http://bioconductor.org/packages/release/bioc/vignettes/affy/inst/doc/affy.pdf) and the [affy reference manual](http://bioconductor.org/packages/release/bioc/manuals/affy/man/affy.pdf). Let's say that I have .CEL files downloaded to a folder called "microarray" on my Desktop.
+
+```{r eval=FALSE}
+# Navigate to the folder containing the .CEL files
+setwd("~/Desktop/microarray/")
+# Read in the data using...
+abatch <- ReadAffy() # this reads in all .CEL files in this directory and stores in the abatch object
+# ...or...
+files <- list.files(".") # get filenames of every file in this directory
+abatch <- read.affybatch(filenames = files)
+```
+
 # Loading packages and data
 
 If you don't already have the packages installed:
