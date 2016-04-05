@@ -1,0 +1,160 @@
+---
+title: "Lab 2: Batch effects"
+author: "Leslie Myint"
+date: "April 5, 2016"
+package: "`r pkg_ver('BiocStyle')`"
+output: 
+  BiocStyle::html_document
+---
+
+# Overview
+
+The goal of this lab is to introduce the **sva** package for adjusting for batch effects and other factors that induce unwanted variation. We will be looking at gene expression measurements from a bladder cancer study with the goal of assessing differential expression between normal, cancer, and biopsied samples.
+
+More information about the **sva** package can be found at [https://www.bioconductor.org/packages/3.3/bioc/vignettes/sva/inst/doc/sva.pdf](https://www.bioconductor.org/packages/3.3/bioc/vignettes/sva/inst/doc/sva.pdf).
+
+# Loading packages and data
+
+If you don't already have the packages installed:
+
+```{r eval=FALSE}
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("sva", "bladderbatch"))
+install.packages("matrixStats")
+```
+
+Load the packages and data:
+
+```{r warning=FALSE, message=FALSE}
+library(sva)
+library(bladderbatch)
+data(bladderdata)
+```
+
+# Setting up our data to run SVA
+
+The goal of SVA is to estimate surrogate variables that collectively describe patterns of unwanted variation in our data. In order to characterize unwanted variation, we must first remove the signal of interest. Extract the expression data and phenotype information used to construct our design matrix. (Original study paper: [http://cancerres.aacrjournals.org/content/64/11/4040.full.pdf](http://cancerres.aacrjournals.org/content/64/11/4040.full.pdf))
+
+```{r}
+pheno <- pData(bladderEset)
+edata <- exprs(bladderEset)
+pheno
+```
+
+In order to run **sva** we must create the design matrices that correspond to the full and the null models. The full model includes an effect of cancer classification, and the null model just includes an intercept term.
+
+```{r}
+modmatFull <- model.matrix(~as.factor(cancer), data = pheno)
+modmatNull <- model.matrix(~1, data = pheno)
+```
+
+# Running SVA
+
+To estimate surrogate variables, we supply our expression data matrix as well as the design matrices for the full and null models.
+
+```{r}
+# This takes about 30 seconds. Can time the command with:
+# system.time({ svobj <- sva(edata, modmatFull, modmatNull) })
+svobj <- sva(edata, modmatFull, modmatNull)
+```
+
+The **svobj** object contains 4 pieces of information. **sv** is a matrix whose columns contain the estimate surrogate variables. **pprob.gam** gives the posterior probabilities that each gene is associated with at least one surrogate variable. **pprob.b** gives the posterior probabilities that each gene is associated with at least one primary variable of interest (here, cancer classification is the primary variable of interest). **n.sv** is the number of surrogate variables.
+
+```{r}
+str(svobj)
+```
+
+# Using SVA output for further analysis
+
+## Running standard linear modeling to estimate effects of interest
+
+We can perform an F-test for nested regression models for each gene to see if cancer classification is a significant predictor of that gene's expression. If we do this naively without adjusting for latent effects, we see that a very large number of genes (close to 70%) are called differentially expressed even after multiple testing adjustment:
+
+```{r}
+pvals <- f.pvalue(edata, modmatFull, modmatNull)
+qvals <- p.adjust(pvals, method = "BH")
+hist(qvals)
+sum(qvals <= 0.05)
+sum(qvals <= 0.05)/length(qvals)
+```
+
+We can adjust for the latent factors (surrogate variables) estimated by SVA by including them in our full and null design matrices and repeating the same analysis:
+
+```{r}
+modmatFullSv <- cbind(modmatFull, svobj$sv)
+modmatNullSv <- cbind(modmatNull, svobj$sv)
+pvalsSv <- f.pvalue(edata, modmatFullSv, modmatNullSv)
+qvalsSv <- p.adjust(pvalsSv, method="BH")
+plot(density(qvals, from = 0, to = 1), lwd = 3, main = "BH-adjusted p-values")
+lines(density(qvalsSv, from = 0, to = 1), lwd = 3, col = "red")
+legend("topright", legend = c("No SVA", "SVA"), fill = c("black", "red"))
+sum(qvalsSv <= 0.05)
+sum(qvalsSv <= 0.05)/length(qvalsSv)
+```
+
+## Running limma
+
+Because we are in a situation where we are conducting thousands of tests of differential expression, it is reasonable to use **limma**. Remember that with the design matrix that we set up earlier, the regression coefficients are interpreted as differences in expression of normal and cancer states relative to biopsy (biopsy is the reference state). Instead, let's estimate **contrasts** of these coefficients to get all of the pairwise comparisons.
+Contrast 1 (C1) compares cancer samples to biopsied samples (cancer - biopsy).
+Contrast 2 (C2) compares normal samples to cancer samples (normal - cancer).
+Contrast 3 (C3) compares normal versus biopsied samples (normal - biopsy)
+
+```{r}
+library(limma)
+# Fit linear models to get standard coefficients
+fit <- lmFit(edata, modmatFullSv)
+# Define contrasts
+contrast.matrix <- cbind("C1" = c(-1,1,0,rep(0,svobj$n.sv)),
+	"C2" = c(0,-1,1,rep(0,svobj$n.sv)),
+	"C3" = c(-1,0,1,rep(0,svobj$n.sv)))
+# Estimate contrasts
+fitContrasts <- contrasts.fit(fit, contrast.matrix)
+# Get moderated t-statistics
+eb <- eBayes(fitContrasts)
+toptab <- topTable(eb, adjust = "BH", number = Inf)
+head(toptab)
+sum(toptab$adj.P.Val <= 0.05)
+sum(toptab$adj.P.Val <= 0.05)/nrow(toptab)
+```
+
+100% of genes are differentially expressed?! Does this mean that I shouldn't trust **limma** output? Let's compare the two approaches of (1) running standard linear modeling with SVA output and (2) running **limma** with SVA output. Remember that although this dataset provides information about the batches in which the arrays were processed, SVA doesn't use this information. We can use the provided batch information to perform a "gold standard" analysis. Use standard linear models but adjust for batch:
+
+```{r}
+modmatFullBatch <- model.matrix(~as.factor(cancer) + as.factor(batch), data = pheno)
+modmatNullBatch <- model.matrix(~as.factor(batch), data = pheno)
+pvalsBatch <- f.pvalue(edata, modmatFullBatch, modmatNullBatch)
+qvalsBatch <- p.adjust(pvalsBatch, method = "BH")
+sum(qvalsBatch <= 0.05)
+sum(qvalsBatch <= 0.05)/length(qvalsBatch)
+```
+
+We can compare the p-values from the different methods, and it seems that the **limma** p-values are just extremely low.
+
+```{r fig.width=8}
+par(mfrow = c(1,2))
+plot(log2(pvalsBatch), log2(eb$F.p.value), xlab = "p-values (Gold standard)", ylab = "p-values (limma + sva)")
+abline(a = 0, b = 1, lwd = 5, col = "red")
+plot(log2(pvalsBatch), log2(pvalsSv), xlab = "p-values (Gold standard)", ylab = "p-values (std lin mod + sva)")
+abline(a = 0, b = 1, lwd = 5, col = "red")
+```
+
+The p-value magnitudes from **limma** may be extremely small, but their rankings seem reasonable. The top ranked genes have higher expression levels and lower variability.
+
+```{r fig.width=9}
+par(mfrow = c(1,3))
+plot(rank(eb$F.p.value), rowMeans(edata), xlab = "Gene rank (limma + sva)", ylab = "Mean log expression")
+lines(lowess(rank(eb$F.p.value), rowMeans(edata), f = 0.1), lwd = 3, col = "deeppink")
+plot(rank(pvalsSv), rowMeans(edata), xlab = "Gene rank (std lin mod + sva)", ylab = "Mean log expression")
+lines(lowess(rank(pvalsSv), rowMeans(edata), f = 0.1), lwd = 3, col = "deeppink")
+plot(rank(pvals), rowMeans(edata), xlab = "Gene rank (no sva)", ylab = "Mean log expression")
+lines(lowess(rank(pvals), rowMeans(edata), f = 0.1), lwd = 3, col = "deeppink")
+
+library(matrixStats)
+par(mfrow = c(1,3))
+plot(rank(eb$F.p.value), rowSds(edata), xlab = "Gene rank (limma + sva)", ylab = "SD log expression")
+lines(lowess(rank(eb$F.p.value), rowSds(edata), f = 0.1), lwd = 3, col = "deeppink")
+plot(rank(pvalsSv), rowSds(edata), xlab = "Gene rank (std lin mod + sva)", ylab = "SD log expression")
+lines(lowess(rank(pvalsSv), rowSds(edata), f = 0.1), lwd = 3, col = "deeppink")
+plot(rank(pvals), rowSds(edata), xlab = "Gene rank (no sva)", ylab = "SD log expression")
+lines(lowess(rank(pvals), rowSds(edata), f = 0.1), lwd = 3, col = "deeppink")
+```
