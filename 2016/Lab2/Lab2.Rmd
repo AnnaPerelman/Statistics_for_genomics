@@ -104,12 +104,12 @@ library(limma)
 # Fit linear models to get standard coefficients
 fit <- lmFit(edata, modmatFullSv)
 # Define contrasts
-contrast.matrix <- cbind("C1" = c(-1,1,0,rep(0,svobj$n.sv)),
+contrast.matrix <- cbind("C1" = c(0,1,0,rep(0,svobj$n.sv)),
 	"C2" = c(0,-1,1,rep(0,svobj$n.sv)),
-	"C3" = c(-1,0,1,rep(0,svobj$n.sv)))
+	"C3" = c(0,0,1,rep(0,svobj$n.sv)))
 # Estimate contrasts
 fitContrasts <- contrasts.fit(fit, contrast.matrix)
-# Get moderated t-statistics
+# Get moderated F-statistics
 eb <- eBayes(fitContrasts)
 toptab <- topTable(eb, adjust = "BH", number = Inf)
 head(toptab)
@@ -117,7 +117,7 @@ sum(toptab$adj.P.Val <= 0.05)
 sum(toptab$adj.P.Val <= 0.05)/nrow(toptab)
 ```
 
-100% of genes are differentially expressed?! Does this mean that I shouldn't trust **limma** output? Let's compare the two approaches of (1) running standard linear modeling with SVA output and (2) running **limma** with SVA output. Remember that although this dataset provides information about the batches in which the arrays were processed, SVA doesn't use this information. We can use the provided batch information to perform a "gold standard" analysis. Use standard linear models but adjust for batch:
+The two methods give roughly the same number of differentially expressed genes. Let's go a little deeper to compare the two approaches of (1) running standard linear modeling with SVA output and (2) running **limma** with SVA output. Remember that although this dataset provides information about the batches in which the arrays were processed, SVA doesn't use this information. We can use the provided batch information to perform a "gold standard" analysis. Use standard linear models but adjust for batch:
 
 ```{r}
 modmatFullBatch <- model.matrix(~as.factor(cancer) + as.factor(batch), data = pheno)
@@ -128,7 +128,7 @@ sum(qvalsBatch <= 0.05)
 sum(qvalsBatch <= 0.05)/length(qvalsBatch)
 ```
 
-We can compare the p-values from the different methods, and it seems that the **limma** p-values are just extremely low.
+We can compare the p-values from the different methods, and it seems that the p-values from both methods are roughly following the p-values from the gold standard analysis:
 
 ```{r fig.width=8}
 par(mfrow = c(1,2))
@@ -138,7 +138,7 @@ plot(log2(pvalsBatch), log2(pvalsSv), xlab = "p-values (Gold standard)", ylab = 
 abline(a = 0, b = 1, lwd = 5, col = "red")
 ```
 
-The p-value magnitudes from **limma** may be extremely small, but their rankings seem reasonable. The top ranked genes have higher expression levels and lower variability.
+Let's look at how the two methods are ranking the genes. It seems that for limma+sva, standard linear modeling + sva, and a naive analysis without batch effect correction, the top ranked genes tend to have lower expression levels and higher variability. So a clear differentiation of the two methods isn't apparent from this analysis.
 
 ```{r fig.width=9}
 par(mfrow = c(1,3))
