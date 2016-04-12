@@ -6,4 +6,4 @@
 module load bowtie
 module load samtools
 cd ~/statgenomics/lab_seqalign
-bowtie --sam ~/bowtie_indexes/s_cerevisiae example.fastq | samtools view -bS - > example_batchjob.bam
+bowtie --sam ~/bowtie_indexes/s_cerevisiae example.fastq | samtools view -b - > example_batchjob.bam

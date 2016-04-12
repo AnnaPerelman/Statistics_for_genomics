@@ -22,9 +22,9 @@ We first get on a node using the qrsh command. By specifying rnet, you login to 
 
 	qrsh -l rnet mem_free=1G
 
-### Some downloads:
+### Setup folders and download files
 
-Let's first set up our folders.
+Let's first set up our folders:
 	
 	mkdir statgenomics
 	cd statgenomics
@@ -42,11 +42,11 @@ Log off of this node and log in to a standard one:
 
 ### Converting the SRA experiment to fastq file:
 
-Load SRA toolkit:
+Load the SRA toolkit:
 
 	module load sratoolkit
 	
-We are ready to extract the fastq file from the SRA experiment:
+Extract the fastq file from the SRA experiment:
 
 	cd statgenomics/lab_seqalign
 	fastq-dump SRR518875.sra
@@ -56,14 +56,13 @@ We now have the file SRR518875.fastq in the lab_seqalign directory.
 	head -n 8 SRR518875.fastq
 	wc -l SRR518875.fastq # Number of reads x 4
 
-
 For this lab we will work only with a subset of the data (first 1000 reads): 
 
 	head -n 4000 SRR518875.fastq > example.fastq
 
 ### Alignment using bowtie
 
-We need the Yeast genome index files from the Bowtie website:
+We need the yeast genome index files from the Bowtie website:
 
 	cd ~
 	mkdir bowtie_indexes
@@ -71,7 +70,7 @@ We need the Yeast genome index files from the Bowtie website:
 	curl -O ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/s_cerevisiae.ebwt.zip
 	unzip s_cerevisiae.ebwt.zip
 
-We are ready to align the reads with the default parameters of Bowtie:
+Align the reads with Bowtie's default parameters:
 	
 	module load bowtie
 	cd ~/statgenomics/lab_seqalign
