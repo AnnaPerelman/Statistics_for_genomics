@@ -9,7 +9,7 @@ output:
 
 # Overview
 
-We will go through some tools in the `ShortRead` package in Bioconductor for peforming quality assessments of sequencing data.
+We will go through some tools in the `ShortRead` package in Bioconductor for peforming quality assessments of sequencing data as well as some tools in the `GenomicAlignments` and `Rsamtools` packages for working with alignment information in BAM files.
 
 # Loading packages and data
 
@@ -17,18 +17,15 @@ The `ShortRead` package is already installed on the cluster, but if you need to 
 
 ```{r eval=FALSE}
 source("https://bioconductor.org/biocLite.R")
-biocLite("ShortRead")
+biocLite(c("ShortRead", "GenomicAlignments", "Rsamtools"))
 ```
 
-```{r}
-library(ShortRead)
-```
-
-# Exploring fastq files
+# Working with fastq files
 
 We can read a fastq file into memory with `readFastq`. This is best for smaller fastq files.
 
 ```{r}
+library(ShortRead)
 file <- "~/statgenomics/lab_seqalign/example.fastq"
 fq <- readFastq(file)
 ```
@@ -120,4 +117,81 @@ We can look at the distribution of quality measures to get sense of if a cutoff 
 par(mfrow = c(1,2))
 plot(density(totalqual), lwd = 2, xlab = "Total quality score (sum)", main = "Raw")
 plot(density(log2(totalqual+1)), lwd = 2, xlab = "Total quality score (sum)", main = "Log2")
+```
+
+# Working with alignment data
+
+Load packages and store the location of the `example.bam` file from lab 3.
+
+```{r}
+library(Rsamtools)
+library(GenomicAlignments)
+filebam <- "~/statgenomics/lab_seqalign/example_sorted.bam"
+```
+
+## Reading in all alignments
+
+We can read all of the alignment information from the BAM file into a `GenomicAlignments` object.
+
+```{r}
+galign <- readGAlignments(filebam)
+galign
+length(galign) # How many alignments are reported?
+strand(galign) # What strand did each read align to?
+table(strand(galign)) # How many reads aligned to each strand?
+seqnames(galign) # What chromosome did each read align to?
+ranges(galign) # Alignment positions
+```
+
+## Reading in a restricted set of alignments
+
+We may also want to restrict which alignments we read in. We can do this by constructing a `ScanBamParam` object.
+
+```{r}
+scanBamWhat() # list the SAM fields that can be extracted - for the "what" argument below
+gr <- GRanges(seqnames = seqnames(galign[1:5]), ranges = ranges(galign[1:5]))
+sbp <- ScanBamParam(flag = scanBamFlag(isMinusStrand = TRUE), what = c("seq", "qual", "mapq"), which = gr)
+galignSubs <- readGAlignments(filebam, param = sbp)
+galignSubs
+```
+
+We can extract the sequence and quality information in this `GenomicAlignments` object and work with them in the same way as above.
+
+```{r}
+mcols(galignSubs)$seq
+mcols(galignSubs)$qual
+as(mcols(galignSubs)$qual, "matrix")
+```
+
+## Looking at mapped vs. unmapped reads
+
+When we ran `bowtie` in the last lab, only the aligned reads were reported in the resulting SAM/BAM files. If you want `bowtie` to report unaligned reads in a separate file (say unaligned.fq), you can run `bowtie --sam --un unaligned.fq ~/bowtie_indexes/s_cerevisiae example.fastq`. You can then analyze these unaligned reads with the tools in the `ShortRead` package as above. Let's look at how we can recover the unmapped reads from within R. We first use `readGAlignments` again to extract read IDs of mapped reads.
+
+```{r}
+galignQname <- readGAlignments(filebam, param = ScanBamParam(what = c("qname", "seq", "qual", "mapq")))
+idsBam <- mcols(galignQname)$qname
+```
+
+We extract read IDs of all reads from the fastq file and remove the trailing information.
+
+```{r}
+idsFastq <- as.character(id(fq))
+idsFastq <- gsub(" .*", "", idsFastq)
+```
+
+Find which read IDs were mapped and unmapped.
+
+```{r}
+idsMapped <- intersect(idsFastq, idsBam)
+length(idsMapped)
+idsUnmapped <- setdiff(idsFastq, idsBam)
+length(idsUnmapped)
+```
+
+We can use this information to subset the `ShortReadQ` object.
+
+```{r}
+isMapped <- idsFastq %in% idsMapped
+fqMapped <- fq[isMapped]
+fqUnmapped <- fq[!isMapped]
 ```
