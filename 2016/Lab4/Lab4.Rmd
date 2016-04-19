@@ -1,0 +1,123 @@
+---
+title: "Lab 4: Working with short read data"
+author: "Leslie Myint"
+date: "April 19, 2016"
+package: "`r pkg_ver('BiocStyle')`"
+output: 
+  BiocStyle::html_document
+---
+
+# Overview
+
+We will go through some tools in the `ShortRead` package in Bioconductor for peforming quality assessments of sequencing data.
+
+# Loading packages and data
+
+The `ShortRead` package is already installed on the cluster, but if you need to install it on another machine:
+
+```{r eval=FALSE}
+source("https://bioconductor.org/biocLite.R")
+biocLite("ShortRead")
+```
+
+```{r}
+library(ShortRead)
+```
+
+# Exploring fastq files
+
+We can read a fastq file into memory with `readFastq`. This is best for smaller fastq files.
+
+```{r}
+file <- "~/statgenomics/lab_seqalign/example.fastq"
+fq <- readFastq(file)
+```
+
+`fq` is a `ShortReadQ` object that is subsettable. Say we want to only look at an object containing the first 10 reads:
+
+```{r}
+fq[1:10]
+```
+
+We can get the read sequences with `sread`. The resulting object is used for various counting statistics.
+
+```{r}
+readseqs <- sread(fq)
+head(readseqs)
+head(width(readseqs)) # What are the read lengths?
+```
+
+## Base statistics
+
+We can do various base computations with functions in the `Biostrings` package. Let's first look at tabulations at the read level.
+
+```{r}
+alphabet(readseqs) # What nucleotide notation are we using?
+head(alphabetFrequency(readseqs)) # tabulate letter frequencies in each read
+colSums(alphabetFrequency(readseqs)) # unconventional nucleotides are not used
+head(letterFrequency(readseqs, "A")) # frequency of A in each read
+head(letterFrequency(readseqs, "AT")) # frequency of A or T (GC-content)
+head(letterFrequency(readseqs, c("A", "T"))) # frequency of A and T separately
+table(letterFrequency(readseqs, "AT")-rowSums(letterFrequency(readseqs, c("A", "T"))))
+
+head(dinucleotideFrequency(readseqs))
+head(dinucleotideFrequency(readseqs)[,"AG"]) # dinucleotide frequency of AG
+head(trinucleotideFrequency(readseqs))
+head(trinucleotideFrequency(readseqs, as.prob = TRUE)) # as percentages within a read
+head(trinucleotideFrequency(readseqs)[,c("AAG", "ACG")]) # trinucleotide frequencies of AAG, ACG
+head(oligonucleotideFrequency(readseqs, width = 4), 3) # 4-mer counting
+```
+
+We can perform tabulations at the base level with `alphabetByCycle`.
+
+```{r}
+nucFreqByPos <- alphabetByCycle(readseqs, alphabet = c("A", "T", "C", "G"))
+head(nucFreqByPos)
+```
+
+Let's turn the counts into percentages and plot the trends. This is useful for identifying technical errors.
+
+```{r}
+nucPercByPos <- sweep(nucFreqByPos, MARGIN = 2, STATS = colSums(nucFreqByPos), FUN = "/")
+colors <- c("black", "deeppink", "dodgerblue", "mediumpurple")
+matplot(t(nucPercByPos), type = "l", lty = "solid", lwd = 3, col = colors, xlab = "Cycle (position in read)", ylab = "")
+legend("topright", legend = c("A", "T", "C", "G"), fill = colors)
+```
+
+## Quality scores
+
+We can obtain the read quality strings with `quality`:
+
+```{r}
+readquals <- quality(fq)
+head(readquals)
+encoding(quality(fq)) # Phred score encoding (-10log10(prob incorrect))
+```
+
+Let's create a matrix of quality information (rows = reads, columns = cycles).
+
+```{r}
+qualmat <- as(readquals, "matrix")
+head(qualmat)
+```
+
+We can get the "total quality" of the reads with `rowSums` or `alphabetScore`.
+
+```{r}
+totalqual <- rowSums(qualmat)
+all.equal(totalqual, alphabetScore(readquals))
+```
+
+Let's visualize how quality changes over the sequencing run.
+
+```{r}
+plot(colMeans(qualmat), type = "l", lwd = 2, xlab = "Cycle", ylab = "Average quality score")
+```
+
+We can look at the distribution of quality measures to get sense of if a cutoff might be reasonable to filter reads.
+
+```{r fig.width=8}
+par(mfrow = c(1,2))
+plot(density(totalqual), lwd = 2, xlab = "Total quality score (sum)", main = "Raw")
+plot(density(log2(totalqual+1)), lwd = 2, xlab = "Total quality score (sum)", main = "Log2")
+```

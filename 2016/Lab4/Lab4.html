@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Leslie Myint" />
+
+<meta name="date" content="2016-04-19" />
+
+<title>Lab 4: Working with short read data</title>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<link href="data:text/css;charset=utf-8,pre%20%2Eoperator%2C%0Apre%20%2Eparen%7Bcolor%3Argb%28104%2C%20118%2C%20135%29%7Dpre%20%2Eliteral%7Bcolor%3A%23990073%7Dpre%20%2Enumber%7Bcolor%3A%23099%7Dpre%20%2Ecomment%7Bcolor%3A%23998%3Bfont%2Dstyle%3Aitalic%7Dpre%20%2Ekeyword%7Bcolor%3A%23900%3Bfont%2Dweight%3Abold%7Dpre%20%2Eidentifier%7Bcolor%3Argb%280%2C%200%2C%200%29%7Dpre%20%2Estring%7Bcolor%3A%23d14%7D" rel="stylesheet" type="text/css" />
+<script src="data:application/x-javascript;base64,CnZhciBobGpzPW5ldyBmdW5jdGlvbigpe2Z1bmN0aW9uIG0ocCl7cmV0dXJuIHAucmVwbGFjZSgvJi9nbSwiJmFtcDsiKS5yZXBsYWNlKC88L2dtLCImbHQ7Iil9ZnVuY3Rpb24gZihyLHEscCl7cmV0dXJuIFJlZ0V4cChxLCJtIisoci5jST8iaSI6IiIpKyhwPyJnIjoiIikpfWZ1bmN0aW9uIGIocil7Zm9yKHZhciBwPTA7cDxyLmNoaWxkTm9kZXMubGVuZ3RoO3ArKyl7dmFyIHE9ci5jaGlsZE5vZGVzW3BdO2lmKHEubm9kZU5hbWU9PSJDT0RFIil7cmV0dXJuIHF9aWYoIShxLm5vZGVUeXBlPT0zJiZxLm5vZGVWYWx1ZS5tYXRjaCgvXHMrLykpKXticmVha319fWZ1bmN0aW9uIGgodCxzKXt2YXIgcD0iIjtmb3IodmFyIHI9MDtyPHQuY2hpbGROb2Rlcy5sZW5ndGg7cisrKXtpZih0LmNoaWxkTm9kZXNbcl0ubm9kZVR5cGU9PTMpe3ZhciBxPXQuY2hpbGROb2Rlc1tyXS5ub2RlVmFsdWU7aWYocyl7cT1xLnJlcGxhY2UoL1xuL2csIiIpfXArPXF9ZWxzZXtpZih0LmNoaWxkTm9kZXNbcl0ubm9kZU5hbWU9PSJCUiIpe3ArPSJcbiJ9ZWxzZXtwKz1oKHQuY2hpbGROb2Rlc1tyXSl9fX1pZigvTVNJRSBbNjc4XS8udGVzdChuYXZpZ2F0b3IudXNlckFnZW50KSl7cD1wLnJlcGxhY2UoL1xyL2csIlxuIil9cmV0dXJuIHB9ZnVuY3Rpb24gYShzKXt2YXIgcj1zLmNsYXNzTmFtZS5zcGxpdCgvXHMrLyk7cj1yLmNvbmNhdChzLnBhcmVudE5vZGUuY2xhc3NOYW1lLnNwbGl0KC9ccysvKSk7Zm9yKHZhciBxPTA7cTxyLmxlbmd0aDtxKyspe3ZhciBwPXJbcV0ucmVwbGFjZSgvXmxhbmd1YWdlLS8sIiIpO2lmKGVbcF0pe3JldHVybiBwfX19ZnVuY3Rpb24gYyhxKXt2YXIgcD1bXTsoZnVuY3Rpb24ocyx0KXtmb3IodmFyIHI9MDtyPHMuY2hpbGROb2Rlcy5sZW5ndGg7cisrKXtpZihzLmNoaWxkTm9kZXNbcl0ubm9kZVR5cGU9PTMpe3QrPXMuY2hpbGROb2Rlc1tyXS5ub2RlVmFsdWUubGVuZ3RofWVsc2V7aWYocy5jaGlsZE5vZGVzW3JdLm5vZGVOYW1lPT0iQlIiKXt0Kz0xfWVsc2V7aWYocy5jaGlsZE5vZGVzW3JdLm5vZGVUeXBlPT0xKXtwLnB1c2goe2V2ZW50OiJzdGFydCIsb2Zmc2V0OnQsbm9kZTpzLmNoaWxkTm9kZXNbcl19KTt0PWFyZ3VtZW50cy5jYWxsZWUocy5jaGlsZE5vZGVzW3JdLHQpO3AucHVzaCh7ZXZlbnQ6InN0b3AiLG9mZnNldDp0LG5vZGU6cy5jaGlsZE5vZGVzW3JdfSl9fX19cmV0dXJuIHR9KShxLDApO3JldHVybiBwfWZ1bmN0aW9uIGsoeSx3LHgpe3ZhciBxPTA7dmFyIHo9IiI7dmFyIHM9W107ZnVuY3Rpb24gdSgpe2lmKHkubGVuZ3RoJiZ3Lmxlbmd0aCl7aWYoeVswXS5vZmZzZXQhPXdbMF0ub2Zmc2V0KXtyZXR1cm4oeVswXS5vZmZzZXQ8d1swXS5vZmZzZXQpP3k6d31lbHNle3JldHVybiB3WzBdLmV2ZW50PT0ic3RhcnQiP3k6d319ZWxzZXtyZXR1cm4geS5sZW5ndGg/eTp3fX1mdW5jdGlvbiB0KEQpe3ZhciBBPSI8IitELm5vZGVOYW1lLnRvTG93ZXJDYXNlKCk7Zm9yKHZhciBCPTA7QjxELmF0dHJpYnV0ZXMubGVuZ3RoO0IrKyl7dmFyIEM9RC5hdHRyaWJ1dGVzW0JdO0ErPSIgIitDLm5vZGVOYW1lLnRvTG93ZXJDYXNlKCk7aWYoQy52YWx1ZSE9PXVuZGVmaW5lZCYmQy52YWx1ZSE9PWZhbHNlJiZDLnZhbHVlIT09bnVsbCl7QSs9Jz0iJyttKEMudmFsdWUpKyciJ319cmV0dXJuIEErIj4ifXdoaWxlKHkubGVuZ3RofHx3Lmxlbmd0aCl7dmFyIHY9dSgpLnNwbGljZSgwLDEpWzBdO3orPW0oeC5zdWJzdHIocSx2Lm9mZnNldC1xKSk7cT12Lm9mZnNldDtpZih2LmV2ZW50PT0ic3RhcnQiKXt6Kz10KHYubm9kZSk7cy5wdXNoKHYubm9kZSl9ZWxzZXtpZih2LmV2ZW50PT0ic3RvcCIpe3ZhciBwLHI9cy5sZW5ndGg7ZG97ci0tO3A9c1tyXTt6Kz0oIjwvIitwLm5vZGVOYW1lLnRvTG93ZXJDYXNlKCkrIj4iKX13aGlsZShwIT12Lm5vZGUpO3Muc3BsaWNlKHIsMSk7d2hpbGUocjxzLmxlbmd0aCl7eis9dChzW3JdKTtyKyt9fX19cmV0dXJuIHorbSh4LnN1YnN0cihxKSl9ZnVuY3Rpb24gaigpe2Z1bmN0aW9uIHEoeCx5LHYpe2lmKHguY29tcGlsZWQpe3JldHVybn12YXIgdTt2YXIgcz1bXTtpZih4Lmspe3gubFI9Zih5LHgubHx8aGxqcy5JUix0cnVlKTtmb3IodmFyIHcgaW4geC5rKXtpZigheC5rLmhhc093blByb3BlcnR5KHcpKXtjb250aW51ZX1pZih4Lmtbd10gaW5zdGFuY2VvZiBPYmplY3Qpe3U9eC5rW3ddfWVsc2V7dT14Lms7dz0ia2V5d29yZCJ9Zm9yKHZhciByIGluIHUpe2lmKCF1Lmhhc093blByb3BlcnR5KHIpKXtjb250aW51ZX14Lmtbcl09W3csdVtyXV07cy5wdXNoKHIpfX19aWYoIXYpe2lmKHguYldLKXt4LmI9IlxcYigiK3Muam9pbigifCIpKyIpXFxzIn14LmJSPWYoeSx4LmI/eC5iOiJcXEJ8XFxiIik7aWYoIXguZSYmIXguZVcpe3guZT0iXFxCfFxcYiJ9aWYoeC5lKXt4LmVSPWYoeSx4LmUpfX1pZih4Lmkpe3guaVI9Zih5LHguaSl9aWYoeC5yPT09dW5kZWZpbmVkKXt4LnI9MX1pZigheC5jKXt4LmM9W119eC5jb21waWxlZD10cnVlO2Zvcih2YXIgdD0wO3Q8eC5jLmxlbmd0aDt0Kyspe2lmKHguY1t0XT09InNlbGYiKXt4LmNbdF09eH1xKHguY1t0XSx5LGZhbHNlKX1pZih4LnN0YXJ0cyl7cSh4LnN0YXJ0cyx5LGZhbHNlKX19Zm9yKHZhciBwIGluIGUpe2lmKCFlLmhhc093blByb3BlcnR5KHApKXtjb250aW51ZX1xKGVbcF0uZE0sZVtwXSx0cnVlKX19ZnVuY3Rpb24gZChCLEMpe2lmKCFqLmNhbGxlZCl7aigpO2ouY2FsbGVkPXRydWV9ZnVuY3Rpb24gcShyLE0pe2Zvcih2YXIgTD0wO0w8TS5jLmxlbmd0aDtMKyspe2lmKChNLmNbTF0uYlIuZXhlYyhyKXx8W251bGxdKVswXT09cil7cmV0dXJuIE0uY1tMXX19fWZ1bmN0aW9uIHYoTCxyKXtpZihEW0xdLmUmJkRbTF0uZVIudGVzdChyKSl7cmV0dXJuIDF9aWYoRFtMXS5lVyl7dmFyIE09dihMLTEscik7cmV0dXJuIE0/TSsxOjB9cmV0dXJuIDB9ZnVuY3Rpb24gdyhyLEwpe3JldHVybiBMLmkmJkwuaVIudGVzdChyKX1mdW5jdGlvbiBLKE4sTyl7dmFyIE09W107Zm9yKHZhciBMPTA7TDxOLmMubGVuZ3RoO0wrKyl7TS5wdXNoKE4uY1tMXS5iKX12YXIgcj1ELmxlbmd0aC0xO2Rve2lmKERbcl0uZSl7TS5wdXNoKERbcl0uZSl9ci0tfXdoaWxlKERbcisxXS5lVyk7aWYoTi5pKXtNLnB1c2goTi5pKX1yZXR1cm4gZihPLE0uam9pbigifCIpLHRydWUpfWZ1bmN0aW9uIHAoTSxMKXt2YXIgTj1EW0QubGVuZ3RoLTFdO2lmKCFOLnQpe04udD1LKE4sRSl9Ti50Lmxhc3RJbmRleD1MO3ZhciByPU4udC5leGVjKE0pO3JldHVybiByP1tNLnN1YnN0cihMLHIuaW5kZXgtTCksclswXSxmYWxzZV06W00uc3Vic3RyKEwpLCIiLHRydWVdfWZ1bmN0aW9uIHooTixyKXt2YXIgTD1FLmNJP3JbMF0udG9Mb3dlckNhc2UoKTpyWzBdO3ZhciBNPU4ua1tMXTtpZihNJiZNIGluc3RhbmNlb2YgQXJyYXkpe3JldHVybiBNfXJldHVybiBmYWxzZX1mdW5jdGlvbiBGKEwsUCl7TD1tKEwpO2lmKCFQLmspe3JldHVybiBMfXZhciByPSIiO3ZhciBPPTA7UC5sUi5sYXN0SW5kZXg9MDt2YXIgTT1QLmxSLmV4ZWMoTCk7d2hpbGUoTSl7cis9TC5zdWJzdHIoTyxNLmluZGV4LU8pO3ZhciBOPXooUCxNKTtpZihOKXt4Kz1OWzFdO3IrPSc8c3BhbiBjbGFzcz0iJytOWzBdKyciPicrTVswXSsiPC9zcGFuPiJ9ZWxzZXtyKz1NWzBdfU89UC5sUi5sYXN0SW5kZXg7TT1QLmxSLmV4ZWMoTCl9cmV0dXJuIHIrTC5zdWJzdHIoTyxMLmxlbmd0aC1PKX1mdW5jdGlvbiBKKEwsTSl7aWYoTS5zTCYmZVtNLnNMXSl7dmFyIHI9ZChNLnNMLEwpO3grPXIua2V5d29yZF9jb3VudDtyZXR1cm4gci52YWx1ZX1lbHNle3JldHVybiBGKEwsTSl9fWZ1bmN0aW9uIEkoTSxyKXt2YXIgTD1NLmNOPyc8c3BhbiBjbGFzcz0iJytNLmNOKyciPic6IiI7aWYoTS5yQil7eSs9TDtNLmJ1ZmZlcj0iIn1lbHNle2lmKE0uZUIpe3krPW0ocikrTDtNLmJ1ZmZlcj0iIn1lbHNle3krPUw7TS5idWZmZXI9cn19RC5wdXNoKE0pO0ErPU0ucn1mdW5jdGlvbiBHKE4sTSxRKXt2YXIgUj1EW0QubGVuZ3RoLTFdO2lmKFEpe3krPUooUi5idWZmZXIrTixSKTtyZXR1cm4gZmFsc2V9dmFyIFA9cShNLFIpO2lmKFApe3krPUooUi5idWZmZXIrTixSKTtJKFAsTSk7cmV0dXJuIFAuckJ9dmFyIEw9dihELmxlbmd0aC0xLE0pO2lmKEwpe3ZhciBPPVIuY04/Ijwvc3Bhbj4iOiIiO2lmKFIuckUpe3krPUooUi5idWZmZXIrTixSKStPfWVsc2V7aWYoUi5lRSl7eSs9SihSLmJ1ZmZlcitOLFIpK08rbShNKX1lbHNle3krPUooUi5idWZmZXIrTitNLFIpK099fXdoaWxlKEw+MSl7Tz1EW0QubGVuZ3RoLTJdLmNOPyI8L3NwYW4+IjoiIjt5Kz1PO0wtLTtELmxlbmd0aC0tfXZhciByPURbRC5sZW5ndGgtMV07RC5sZW5ndGgtLTtEW0QubGVuZ3RoLTFdLmJ1ZmZlcj0iIjtpZihyLnN0YXJ0cyl7SShyLnN0YXJ0cywiIil9cmV0dXJuIFIuckV9aWYodyhNLFIpKXt0aHJvdyJJbGxlZ2FsIn19dmFyIEU9ZVtCXTt2YXIgRD1bRS5kTV07dmFyIEE9MDt2YXIgeD0wO3ZhciB5PSIiO3RyeXt2YXIgcyx1PTA7RS5kTS5idWZmZXI9IiI7ZG97cz1wKEMsdSk7dmFyIHQ9RyhzWzBdLHNbMV0sc1syXSk7dSs9c1swXS5sZW5ndGg7aWYoIXQpe3UrPXNbMV0ubGVuZ3RofX13aGlsZSghc1syXSk7aWYoRC5sZW5ndGg+MSl7dGhyb3ciSWxsZWdhbCJ9cmV0dXJue3I6QSxrZXl3b3JkX2NvdW50OngsdmFsdWU6eX19Y2F0Y2goSCl7aWYoSD09IklsbGVnYWwiKXtyZXR1cm57cjowLGtleXdvcmRfY291bnQ6MCx2YWx1ZTptKEMpfX1lbHNle3Rocm93IEh9fX1mdW5jdGlvbiBnKHQpe3ZhciBwPXtrZXl3b3JkX2NvdW50OjAscjowLHZhbHVlOm0odCl9O3ZhciByPXA7Zm9yKHZhciBxIGluIGUpe2lmKCFlLmhhc093blByb3BlcnR5KHEpKXtjb250aW51ZX12YXIgcz1kKHEsdCk7cy5sYW5ndWFnZT1xO2lmKHMua2V5d29yZF9jb3VudCtzLnI+ci5rZXl3b3JkX2NvdW50K3Iucil7cj1zfWlmKHMua2V5d29yZF9jb3VudCtzLnI+cC5rZXl3b3JkX2NvdW50K3Aucil7cj1wO3A9c319aWYoci5sYW5ndWFnZSl7cC5zZWNvbmRfYmVzdD1yfXJldHVybiBwfWZ1bmN0aW9uIGkocixxLHApe2lmKHEpe3I9ci5yZXBsYWNlKC9eKCg8W14+XSs+fFx0KSspL2dtLGZ1bmN0aW9uKHQsdyx2LHUpe3JldHVybiB3LnJlcGxhY2UoL1x0L2cscSl9KX1pZihwKXtyPXIucmVwbGFjZSgvXG4vZywiPGJyPiIpfXJldHVybiByfWZ1bmN0aW9uIG4odCx3LHIpe3ZhciB4PWgodCxyKTt2YXIgdj1hKHQpO3ZhciB5LHM7aWYodil7eT1kKHYseCl9ZWxzZXtyZXR1cm59dmFyIHE9Yyh0KTtpZihxLmxlbmd0aCl7cz1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCJwcmUiKTtzLmlubmVySFRNTD15LnZhbHVlO3kudmFsdWU9ayhxLGMocykseCl9eS52YWx1ZT1pKHkudmFsdWUsdyxyKTt2YXIgdT10LmNsYXNzTmFtZTtpZighdS5tYXRjaCgiKFxcc3xeKShsYW5ndWFnZS0pPyIrdisiKFxcc3wkKSIpKXt1PXU/KHUrIiAiK3YpOnZ9aWYoL01TSUUgWzY3OF0vLnRlc3QobmF2aWdhdG9yLnVzZXJBZ2VudCkmJnQudGFnTmFtZT09IkNPREUiJiZ0LnBhcmVudE5vZGUudGFnTmFtZT09IlBSRSIpe3M9dC5wYXJlbnROb2RlO3ZhciBwPWRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoImRpdiIpO3AuaW5uZXJIVE1MPSI8cHJlPjxjb2RlPiIreS52YWx1ZSsiPC9jb2RlPjwvcHJlPiI7dD1wLmZpcnN0Q2hpbGQuZmlyc3RDaGlsZDtwLmZpcnN0Q2hpbGQuY049cy5jTjtzLnBhcmVudE5vZGUucmVwbGFjZUNoaWxkKHAuZmlyc3RDaGlsZCxzKX1lbHNle3QuaW5uZXJIVE1MPXkudmFsdWV9dC5jbGFzc05hbWU9dTt0LnJlc3VsdD17bGFuZ3VhZ2U6dixrdzp5LmtleXdvcmRfY291bnQscmU6eS5yfTtpZih5LnNlY29uZF9iZXN0KXt0LnNlY29uZF9iZXN0PXtsYW5ndWFnZTp5LnNlY29uZF9iZXN0Lmxhbmd1YWdlLGt3Onkuc2Vjb25kX2Jlc3Qua2V5d29yZF9jb3VudCxyZTp5LnNlY29uZF9iZXN0LnJ9fX1mdW5jdGlvbiBvKCl7aWYoby5jYWxsZWQpe3JldHVybn1vLmNhbGxlZD10cnVlO3ZhciByPWRvY3VtZW50LmdldEVsZW1lbnRzQnlUYWdOYW1lKCJwcmUiKTtmb3IodmFyIHA9MDtwPHIubGVuZ3RoO3ArKyl7dmFyIHE9YihyW3BdKTtpZihxKXtuKHEsaGxqcy50YWJSZXBsYWNlKX19fWZ1bmN0aW9uIGwoKXtpZih3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcil7d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoIkRPTUNvbnRlbnRMb2FkZWQiLG8sZmFsc2UpO3dpbmRvdy5hZGRFdmVudExpc3RlbmVyKCJsb2FkIixvLGZhbHNlKX1lbHNle2lmKHdpbmRvdy5hdHRhY2hFdmVudCl7d2luZG93LmF0dGFjaEV2ZW50KCJvbmxvYWQiLG8pfWVsc2V7d2luZG93Lm9ubG9hZD1vfX19dmFyIGU9e307dGhpcy5MQU5HVUFHRVM9ZTt0aGlzLmhpZ2hsaWdodD1kO3RoaXMuaGlnaGxpZ2h0QXV0bz1nO3RoaXMuZml4TWFya3VwPWk7dGhpcy5oaWdobGlnaHRCbG9jaz1uO3RoaXMuaW5pdEhpZ2hsaWdodGluZz1vO3RoaXMuaW5pdEhpZ2hsaWdodGluZ09uTG9hZD1sO3RoaXMuSVI9IlthLXpBLVpdW2EtekEtWjAtOV9dKiI7dGhpcy5VSVI9IlthLXpBLVpfXVthLXpBLVowLTlfXSoiO3RoaXMuTlI9IlxcYlxcZCsoXFwuXFxkKyk/Ijt0aGlzLkNOUj0iXFxiKDBbeFhdW2EtZkEtRjAtOV0rfChcXGQrKFxcLlxcZCopP3xcXC5cXGQrKShbZUVdWy0rXT9cXGQrKT8pIjt0aGlzLkJOUj0iXFxiKDBiWzAxXSspIjt0aGlzLlJTUj0iIXwhPXwhPT18JXwlPXwmfCYmfCY9fFxcKnxcXCo9fFxcK3xcXCs9fCx8XFwufC18LT18L3wvPXw6fDt8PHw8PHw8PD18PD18PXw9PXw9PT18Pnw+PXw+Pnw+Pj18Pj4+fD4+Pj18XFw/fFxcW3xcXHt8XFwofFxcXnxcXF49fFxcfHxcXHw9fFxcfFxcfHx+Ijt0aGlzLkVSPSIoPyFbXFxzXFxTXSkiO3RoaXMuQkU9e2I6IlxcXFwuIixyOjB9O3RoaXMuQVNNPXtjTjoic3RyaW5nIixiOiInIixlOiInIixpOiJcXG4iLGM6W3RoaXMuQkVdLHI6MH07dGhpcy5RU009e2NOOiJzdHJpbmciLGI6JyInLGU6JyInLGk6IlxcbiIsYzpbdGhpcy5CRV0scjowfTt0aGlzLkNMQ009e2NOOiJjb21tZW50IixiOiIvLyIsZToiJCJ9O3RoaXMuQ0JMQ0xNPXtjTjoiY29tbWVudCIsYjoiL1xcKiIsZToiXFwqLyJ9O3RoaXMuSENNPXtjTjoiY29tbWVudCIsYjoiIyIsZToiJCJ9O3RoaXMuTk09e2NOOiJudW1iZXIiLGI6dGhpcy5OUixyOjB9O3RoaXMuQ05NPXtjTjoibnVtYmVyIixiOnRoaXMuQ05SLHI6MH07dGhpcy5CTk09e2NOOiJudW1iZXIiLGI6dGhpcy5CTlIscjowfTt0aGlzLmluaGVyaXQ9ZnVuY3Rpb24ocixzKXt2YXIgcD17fTtmb3IodmFyIHEgaW4gcil7cFtxXT1yW3FdfWlmKHMpe2Zvcih2YXIgcSBpbiBzKXtwW3FdPXNbcV19fXJldHVybiBwfX0oKTtobGpzLkxBTkdVQUdFUy5jcHA9ZnVuY3Rpb24oKXt2YXIgYT17a2V5d29yZDp7ImZhbHNlIjoxLCJpbnQiOjEsImZsb2F0IjoxLCJ3aGlsZSI6MSwicHJpdmF0ZSI6MSwiY2hhciI6MSwiY2F0Y2giOjEsImV4cG9ydCI6MSx2aXJ0dWFsOjEsb3BlcmF0b3I6MixzaXplb2Y6MixkeW5hbWljX2Nhc3Q6Mix0eXBlZGVmOjIsY29uc3RfY2FzdDoyLCJjb25zdCI6MSxzdHJ1Y3Q6MSwiZm9yIjoxLHN0YXRpY19jYXN0OjIsdW5pb246MSxuYW1lc3BhY2U6MSx1bnNpZ25lZDoxLCJsb25nIjoxLCJ0aHJvdyI6MSwidm9sYXRpbGUiOjIsInN0YXRpYyI6MSwicHJvdGVjdGVkIjoxLGJvb2w6MSx0ZW1wbGF0ZToxLG11dGFibGU6MSwiaWYiOjEsInB1YmxpYyI6MSxmcmllbmQ6MiwiZG8iOjEsInJldHVybiI6MSwiZ290byI6MSxhdXRvOjEsInZvaWQiOjIsImVudW0iOjEsImVsc2UiOjEsImJyZWFrIjoxLCJuZXciOjEsZXh0ZXJuOjEsdXNpbmc6MSwidHJ1ZSI6MSwiY2xhc3MiOjEsYXNtOjEsImNhc2UiOjEsdHlwZWlkOjEsInNob3J0IjoxLHJlaW50ZXJwcmV0X2Nhc3Q6MiwiZGVmYXVsdCI6MSwiZG91YmxlIjoxLHJlZ2lzdGVyOjEsZXhwbGljaXQ6MSxzaWduZWQ6MSx0eXBlbmFtZToxLCJ0cnkiOjEsInRoaXMiOjEsInN3aXRjaCI6MSwiY29udGludWUiOjEsd2NoYXJfdDoxLGlubGluZToxLCJkZWxldGUiOjEsYWxpZ25vZjoxLGNoYXIxNl90OjEsY2hhcjMyX3Q6MSxjb25zdGV4cHI6MSxkZWNsdHlwZToxLG5vZXhjZXB0OjEsbnVsbHB0cjoxLHN0YXRpY19hc3NlcnQ6MSx0aHJlYWRfbG9jYWw6MSxyZXN0cmljdDoxLF9Cb29sOjEsY29tcGxleDoxfSxidWlsdF9pbjp7c3RkOjEsc3RyaW5nOjEsY2luOjEsY291dDoxLGNlcnI6MSxjbG9nOjEsc3RyaW5nc3RyZWFtOjEsaXN0cmluZ3N0cmVhbToxLG9zdHJpbmdzdHJlYW06MSxhdXRvX3B0cjoxLGRlcXVlOjEsbGlzdDoxLHF1ZXVlOjEsc3RhY2s6MSx2ZWN0b3I6MSxtYXA6MSxzZXQ6MSxiaXRzZXQ6MSxtdWx0aXNldDoxLG11bHRpbWFwOjEsdW5vcmRlcmVkX3NldDoxLHVub3JkZXJlZF9tYXA6MSx1bm9yZGVyZWRfbXVsdGlzZXQ6MSx1bm9yZGVyZWRfbXVsdGltYXA6MSxhcnJheToxLHNoYXJlZF9wdHI6MX19O3JldHVybntkTTp7azphLGk6IjwvIixjOltobGpzLkNMQ00saGxqcy5DQkxDTE0saGxqcy5RU00se2NOOiJzdHJpbmciLGI6IidcXFxcPy4iLGU6IiciLGk6Ii4ifSx7Y046Im51bWJlciIsYjoiXFxiKFxcZCsoXFwuXFxkKik/fFxcLlxcZCspKHV8VXxsfEx8dWx8VUx8ZnxGKSJ9LGhsanMuQ05NLHtjTjoicHJlcHJvY2Vzc29yIixiOiIjIixlOiIkIn0se2NOOiJzdGxfY29udGFpbmVyIixiOiJcXGIoZGVxdWV8bGlzdHxxdWV1ZXxzdGFja3x2ZWN0b3J8bWFwfHNldHxiaXRzZXR8bXVsdGlzZXR8bXVsdGltYXB8dW5vcmRlcmVkX21hcHx1bm9yZGVyZWRfc2V0fHVub3JkZXJlZF9tdWx0aXNldHx1bm9yZGVyZWRfbXVsdGltYXB8YXJyYXkpXFxzKjwiLGU6Ij4iLGs6YSxyOjEwLGM6WyJzZWxmIl19XX19fSgpO2hsanMuTEFOR1VBR0VTLnI9e2RNOntjOltobGpzLkhDTSx7Y046Im51bWJlciIsYjoiXFxiMFt4WF1bMC05YS1mQS1GXStbTGldP1xcYiIsZTpobGpzLklNTUVESUFURV9SRSxyOjB9LHtjTjoibnVtYmVyIixiOiJcXGJcXGQrKD86W2VFXVsrXFwtXT9cXGQqKT9MXFxiIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MH0se2NOOiJudW1iZXIiLGI6IlxcYlxcZCtcXC4oPyFcXGQpKD86aVxcYik/IixlOmhsanMuSU1NRURJQVRFX1JFLHI6MX0se2NOOiJudW1iZXIiLGI6IlxcYlxcZCsoPzpcXC5cXGQqKT8oPzpbZUVdWytcXC1dP1xcZCopP2k/XFxiIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MH0se2NOOiJudW1iZXIiLGI6IlxcLlxcZCsoPzpbZUVdWytcXC1dP1xcZCopP2k/XFxiIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MX0se2NOOiJrZXl3b3JkIixiOiIoPzp0cnlDYXRjaHxsaWJyYXJ5fHNldEdlbmVyaWN8c2V0R3JvdXBHZW5lcmljKVxcYiIsZTpobGpzLklNTUVESUFURV9SRSxyOjEwfSx7Y046ImtleXdvcmQiLGI6IlxcLlxcLlxcLiIsZTpobGpzLklNTUVESUFURV9SRSxyOjEwfSx7Y046ImtleXdvcmQiLGI6IlxcLlxcLlxcZCsoPyFbXFx3Ll0pIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MTB9LHtjTjoia2V5d29yZCIsYjoiXFxiKD86ZnVuY3Rpb24pIixlOmhsanMuSU1NRURJQVRFX1JFLHI6Mn0se2NOOiJrZXl3b3JkIixiOiIoPzppZnxpbnxicmVha3xuZXh0fHJlcGVhdHxlbHNlfGZvcnxyZXR1cm58c3dpdGNofHdoaWxlfHRyeXxzdG9wfHdhcm5pbmd8cmVxdWlyZXxhdHRhY2h8ZGV0YWNofHNvdXJjZXxzZXRNZXRob2R8c2V0Q2xhc3MpXFxiIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MX0se2NOOiJsaXRlcmFsIixiOiIoPzpOQXxOQV9pbnRlZ2VyX3xOQV9yZWFsX3xOQV9jaGFyYWN0ZXJffE5BX2NvbXBsZXhfKVxcYiIsZTpobGpzLklNTUVESUFURV9SRSxyOjEwfSx7Y046ImxpdGVyYWwiLGI6Iig/Ok5VTEx8VFJVRXxGQUxTRXxUfEZ8SW5mfE5hTilcXGIiLGU6aGxqcy5JTU1FRElBVEVfUkUscjoxfSx7Y046ImlkZW50aWZpZXIiLGI6IlthLXpBLVouXVthLXpBLVowLTkuX10qXFxiIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MH0se2NOOiJvcGVyYXRvciIsYjoiPFxcLSg/IVxccypcXGQpIixlOmhsanMuSU1NRURJQVRFX1JFLHI6Mn0se2NOOiJvcGVyYXRvciIsYjoiXFwtPnw8XFwtIixlOmhsanMuSU1NRURJQVRFX1JFLHI6MX0se2NOOiJvcGVyYXRvciIsYjoiJSV8fiIsZTpobGpzLklNTUVESUFURV9SRX0se2NOOiJvcGVyYXRvciIsYjoiPj18PD18PT18IT18XFx8XFx8fCYmfD18XFwrfFxcLXxcXCp8L3xcXF58Pnw8fCF8JnxcXHx8XFwkfDoiLGU6aGxqcy5JTU1FRElBVEVfUkUscjowfSx7Y046Im9wZXJhdG9yIixiOiIlIixlOiIlIixpOiJcXG4iLHI6MX0se2NOOiJpZGVudGlmaWVyIixiOiJgIixlOiJgIixyOjB9LHtjTjoic3RyaW5nIixiOiciJyxlOiciJyxjOltobGpzLkJFXSxyOjB9LHtjTjoic3RyaW5nIixiOiInIixlOiInIixjOltobGpzLkJFXSxyOjB9LHtjTjoicGFyZW4iLGI6IltbKHtcXF0pfV0iLGU6aGxqcy5JTU1FRElBVEVfUkUscjowfV19fTsKaGxqcy5pbml0SGlnaGxpZ2h0aW5nT25Mb2FkKCk7Cgo="></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+<link href="data:text/css;charset=utf-8,body%2C%20td%7Bfont%2Dfamily%3Asans%2Dserif%3Bbackground%2Dcolor%3Awhite%3Bfont%2Dsize%3A13px%7Dbody%7Bmax%2Dwidth%3A800px%3Bmargin%3A0%20auto%3Bpadding%3A1em%201em%202em%3Bline%2Dheight%3A20px%7Ddiv%23TOC%20li%7Blist%2Dstyle%3Anone%3Bbackground%2Dimage%3Anone%3Bbackground%2Drepeat%3Anone%3Bbackground%2Dposition%3A0%7Dp%2C%20pre%7Bmargin%3A0em%200em%201em%7Dimg%2C%20table%7Bmargin%3A0em%20auto%201em%7Dp%7Btext%2Dalign%3Ajustify%7Dtt%2C%20code%2C%20pre%7Bfont%2Dfamily%3A%27DejaVu%20Sans%20Mono%27%2C%20%27Droid%20Sans%20Mono%27%2C%20%27Lucida%20Console%27%2C%20Consolas%2C%20Monaco%2C%20monospace%7Dh1%2C%20h2%2C%20h3%2C%20h4%2C%20h5%2C%20h6%7Bfont%2Dfamily%3AHelvetica%2C%20Arial%2C%20sans%2Dserif%3Bmargin%3A1%2E2em%200em%200%2E6em%200em%3Bfont%2Dweight%3Abold%7Dh1%2Etitle%7Bfont%2Dsize%3A250%25%3Bfont%2Dweight%3Anormal%3Bcolor%3A%2387b13f%3Bline%2Dheight%3A1%2E1em%3Bmargin%2Dtop%3A0px%3Bborder%2Dbottom%3A0px%7Dh1%7Bfont%2Dsize%3A160%25%3Bfont%2Dweight%3Anormal%3Bline%2Dheight%3A1%2E4em%3Bborder%2Dbottom%3A1px%20%231a81c2%20solid%7Dh2%7Bfont%2Dsize%3A130%25%7Dh1%2C%20h2%2C%20h3%7Bcolor%3A%231a81c2%7Dh3%2C%20h4%2C%20h5%2C%20h6%7Bfont%2Dsize%3A115%25%7Da%7Bcolor%3A%231a81c2%7Da%3Aactive%7Boutline%3Anone%7Da%3Avisited%7Bcolor%3A%231a81c2%7Da%3Ahover%7Bcolor%3A%234c94c2%7Dpre%2C%20img%7Bmax%2Dwidth%3A100%25%3Bdisplay%3Ablock%7Dpre%7Bborder%3A0px%20none%3Bbackground%2Dcolor%3A%23F8F8F8%3Bwhite%2Dspace%3Apre%3Boverflow%2Dx%3Aauto%7Dpre%20code%7Bborder%3A1px%20%23aaa%20dashed%3Bbackground%2Dcolor%3Awhite%3Bdisplay%3Ablock%3Bpadding%3A1em%3Bcolor%3A%23111%3Boverflow%2Dx%3Ainherit%7Dpre%20code%5Bclass%5D%7Bbackground%2Dcolor%3Ainherit%7Dpre%5Bclass%5D%20code%7Bbackground%2Dcolor%3Ainherit%7Dcode%7Bbackground%2Dcolor%3Atransparent%3Bcolor%3A%2387b13f%3Bfont%2Dsize%3A92%25%7Dtable%2C%20td%2C%20th%7Bborder%3Anone%3Bpadding%3A0%200%2E5em%7Dtbody%20tr%3Anth%2Dchild%28odd%29%20td%7Bbackground%2Dcolor%3A%23F8F8F8%7Dblockquote%7Bcolor%3A%23666666%3Bmargin%3A0%3Bpadding%2Dleft%3A1em%3Bborder%2Dleft%3A0%2E5em%20%23EEE%20solid%7Dhr%7Bheight%3A0px%3Bborder%2Dbottom%3Anone%3Bborder%2Dtop%2Dwidth%3Athin%3Bborder%2Dtop%2Dstyle%3Adotted%3Bborder%2Dtop%2Dcolor%3A%23999999%7Dspan%2Eheader%2Dsection%2Dnumber%7Bpadding%2Dright%3A1em%7Dspan%2Etoc%2Dsection%2Dnumber%3A%3Aafter%7Bcontent%3A%22%20%20%22%3Bwhite%2Dspace%3Apre%7D%40media%20print%7B%2A%7Bbackground%3Atransparent%20%21important%3Bcolor%3Ablack%20%21important%3Bfilter%3Anone%20%21important%3B%2Dms%2Dfilter%3Anone%20%21important%7Dbody%7Bfont%2Dsize%3A12pt%3Bmax%2Dwidth%3A100%25%7Da%2C%20a%3Avisited%7Btext%2Ddecoration%3Aunderline%7Dhr%7Bvisibility%3Ahidden%3Bpage%2Dbreak%2Dbefore%3Aalways%7Dpre%2C%20blockquote%7Bpadding%2Dright%3A1em%3Bpage%2Dbreak%2Dinside%3Aavoid%7Dtr%2C%20img%7Bpage%2Dbreak%2Dinside%3Aavoid%7Dimg%7Bmax%2Dwidth%3A100%25%20%21important%7D%40page%20%3Aleft%7Bmargin%3A15mm%2020mm%2015mm%2010mm%7D%40page%20%3Aright%7Bmargin%3A15mm%2010mm%2015mm%2020mm%7Dp%2C%20h2%2C%20h3%7Borphans%3A3%3Bwidows%3A3%7Dh2%2C%20h3%7Bpage%2Dbreak%2Dafter%3Aavoid%7D%7D" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() {
+  var links = document.links;  
+  for (var i = 0, linksLength = links.length; i < linksLength; i++)
+    if(links[i].hostname != window.location.hostname)
+      links[i].target = '_blank';
+});
+</script>
+
+</head>
+
+<body>
+
+
+<div id="header">
+<h1 class="title">Lab 4: Working with short read data</h1>
+<h4 class="author"><em>Leslie Myint</em></h4>
+<h4 class="date"><em>April 19, 2016</em></h4>
+</div>
+<h4 class="package">Package version: <span style="font-weight: normal">BiocStyle 1.8.0</span></h4>
+
+<h1>Contents</h1>
+<div id="TOC">
+<ul>
+<li><a href="#overview"><span class="toc-section-number">1</span> Overview</a></li>
+<li><a href="#loading-packages-and-data"><span class="toc-section-number">2</span> Loading packages and data</a></li>
+<li><a href="#exploring-fastq-files"><span class="toc-section-number">3</span> Exploring fastq files</a><ul>
+<li><a href="#base-statistics"><span class="toc-section-number">3.1</span> Base statistics</a></li>
+<li><a href="#quality-scores"><span class="toc-section-number">3.2</span> Quality scores</a></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="overview" class="section level1">
+<h1><span class="header-section-number">1</span> Overview</h1>
+<p>We will go through some tools in the <code>ShortRead</code> package in Bioconductor for peforming quality assessments of sequencing data.</p>
+</div>
+<div id="loading-packages-and-data" class="section level1">
+<h1><span class="header-section-number">2</span> Loading packages and data</h1>
+<p>The <code>ShortRead</code> package is already installed on the cluster, but if you need to install it on another machine:</p>
+<pre class="r"><code>source(&quot;https://bioconductor.org/biocLite.R&quot;)
+biocLite(&quot;ShortRead&quot;)</code></pre>
+<pre class="r"><code>library(ShortRead)</code></pre>
+</div>
+<div id="exploring-fastq-files" class="section level1">
+<h1><span class="header-section-number">3</span> Exploring fastq files</h1>
+<p>We can read a fastq file into memory with <code>readFastq</code>. This is best for smaller fastq files.</p>
+<pre class="r"><code>file &lt;- &quot;~/statgenomics/lab_seqalign/example.fastq&quot;
+fq &lt;- readFastq(file)</code></pre>
+<p><code>fq</code> is a <code>ShortReadQ</code> object that is subsettable. Say we want to only look at an object containing the first 10 reads:</p>
+<pre class="r"><code>fq[1:10]</code></pre>
+<pre><code>## class: ShortReadQ
+## length: 10 reads; width: 36 cycles</code></pre>
+<p>We can get the read sequences with <code>sread</code>. The resulting object is used for various counting statistics.</p>
+<pre class="r"><code>readseqs &lt;- sread(fq)
+head(readseqs)</code></pre>
+<pre><code>##   A DNAStringSet instance of length 6
+##     width seq
+## [1]    36 AAATCTTCTGTCTTTTGCTTTTGGACTCCATTCGTC
+## [2]    36 CATTGCTCAAAAGTATCTCTTTGCTATATATCTCTG
+## [3]    36 TGATGATGATGATGATGATGACGACGACGATGACGA
+## [4]    36 ATGTTCGAAGTGGTTGACGCTAATAATGAAGTTCAA
+## [5]    36 CTGCGTTCTTCATCGATGCGAGAACCAAGAGATCCG
+## [6]    36 TAGCACTTTTTGTGTTCAATCACCTCCCAATATGCA</code></pre>
+<pre class="r"><code>head(width(readseqs)) # What are the read lengths?</code></pre>
+<pre><code>## [1] 36 36 36 36 36 36</code></pre>
+<div id="base-statistics" class="section level2">
+<h2><span class="header-section-number">3.1</span> Base statistics</h2>
+<p>We can do various base computations with functions in the <code>Biostrings</code> package. Let’s first look at tabulations at the read level.</p>
+<pre class="r"><code>alphabet(readseqs) # What nucleotide notation are we using?</code></pre>
+<pre><code>##  [1] &quot;A&quot; &quot;C&quot; &quot;G&quot; &quot;T&quot; &quot;M&quot; &quot;R&quot; &quot;W&quot; &quot;S&quot; &quot;Y&quot; &quot;K&quot; &quot;V&quot; &quot;H&quot; &quot;D&quot; &quot;B&quot; &quot;N&quot; &quot;-&quot; &quot;+&quot;
+## [18] &quot;.&quot;</code></pre>
+<pre class="r"><code>head(alphabetFrequency(readseqs)) # tabulate letter frequencies in each read</code></pre>
+<pre><code>##       A  C  G  T M R W S Y K V H D B N - + .
+## [1,]  5  9  5 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [2,]  9  8  4 15 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [3,] 12  4 12  8 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [4,] 12  4  9 11 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [5,]  9 10  9  8 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+## [6,]  9 10  4 13 0 0 0 0 0 0 0 0 0 0 0 0 0 0</code></pre>
+<pre class="r"><code>colSums(alphabetFrequency(readseqs)) # unconventional nucleotides are not used</code></pre>
+<pre><code>##     A     C     G     T     M     R     W     S     Y     K     V     H 
+## 10969  7147  6873 11011     0     0     0     0     0     0     0     0 
+##     D     B     N     -     +     . 
+##     0     0     0     0     0     0</code></pre>
+<pre class="r"><code>head(letterFrequency(readseqs, &quot;A&quot;)) # frequency of A in each read</code></pre>
+<pre><code>##       A
+## [1,]  5
+## [2,]  9
+## [3,] 12
+## [4,] 12
+## [5,]  9
+## [6,]  9</code></pre>
+<pre class="r"><code>head(letterFrequency(readseqs, &quot;AT&quot;)) # frequency of A or T (GC-content)</code></pre>
+<pre><code>##      A|T
+## [1,]  22
+## [2,]  24
+## [3,]  20
+## [4,]  23
+## [5,]  17
+## [6,]  22</code></pre>
+<pre class="r"><code>head(letterFrequency(readseqs, c(&quot;A&quot;, &quot;T&quot;))) # frequency of A and T separately</code></pre>
+<pre><code>##       A  T
+## [1,]  5 17
+## [2,]  9 15
+## [3,] 12  8
+## [4,] 12 11
+## [5,]  9  8
+## [6,]  9 13</code></pre>
+<pre class="r"><code>table(letterFrequency(readseqs, &quot;AT&quot;)-rowSums(letterFrequency(readseqs, c(&quot;A&quot;, &quot;T&quot;))))</code></pre>
+<pre><code>## 
+##    0 
+## 1000</code></pre>
+<pre class="r"><code>head(dinucleotideFrequency(readseqs))</code></pre>
+<pre><code>##      AA AC AG AT CA CC CG CT GA GC GG GT TA TC TG TT
+## [1,]  2  1  0  2  1  1  1  5  1  1  1  2  0  6  3  8
+## [2,]  3  0  1  5  2  0  0  6  0  2  0  1  4  5  3  3
+## [3,]  0  4  0  7  0  0  4  0 12  0  0  0  0  0  8  0
+## [4,]  5  1  2  3  1  0  2  1  3  1  1  4  2  2  4  3
+## [5,]  2  1  3  3  2  2  4  2  5  2  0  1  0  4  2  2
+## [6,]  2  2  1  3  5  3  0  2  0  2  0  2  2  3  3  5</code></pre>
+<pre class="r"><code>head(dinucleotideFrequency(readseqs)[,&quot;AG&quot;]) # dinucleotide frequency of AG</code></pre>
+<pre><code>## [1] 0 1 0 2 3 1</code></pre>
+<pre class="r"><code>head(trinucleotideFrequency(readseqs))</code></pre>
+<pre><code>##      AAA AAC AAG AAT ACA ACC ACG ACT AGA AGC AGG AGT ATA ATC ATG ATT CAA
+## [1,]   1   0   0   1   0   0   0   1   0   0   0   0   0   1   0   1   0
+## [2,]   2   0   1   0   0   0   0   0   0   0   0   1   2   2   0   1   1
+## [3,]   0   0   0   0   0   0   4   0   0   0   0   0   0   0   7   0   0
+## [4,]   0   0   2   2   0   0   1   0   0   0   0   2   1   0   2   0   1
+## [5,]   0   1   1   0   0   1   0   0   3   0   0   0   0   2   1   0   1
+## [6,]   0   0   0   2   0   1   0   1   0   1   0   0   1   1   1   0   2
+##      CAC CAG CAT CCA CCC CCG CCT CGA CGC CGG CGT CTA CTC CTG CTT GAA GAC
+## [1,]   0   0   1   1   0   0   0   0   0   0   1   0   1   1   3   0   1
+## [2,]   0   0   1   0   0   0   0   0   0   0   0   1   3   1   1   0   0
+## [3,]   0   0   0   0   0   0   0   4   0   0   0   0   0   0   0   0   4
+## [4,]   0   0   0   0   0   0   0   1   1   0   0   1   0   0   0   2   1
+## [5,]   0   0   1   1   0   1   0   2   0   0   1   0   0   1   1   1   0
+## [6,]   2   0   0   1   1   0   1   0   0   0   0   0   1   0   1   0   0
+##      GAG GAT GCA GCC GCG GCT GGA GGC GGG GGT GTA GTC GTG GTT TAA TAC TAG
+## [1,]   0   0   0   0   0   1   1   0   0   0   0   2   0   0   0   0   0
+## [2,]   0   0   0   0   0   2   0   0   0   0   1   0   0   0   0   0   0
+## [3,]   0   7   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+## [4,]   0   0   0   0   0   1   0   0   0   1   0   0   1   3   2   0   0
+## [5,]   2   2   0   0   2   0   0   0   0   0   0   0   0   1   0   0   0
+## [6,]   0   0   2   0   0   0   0   0   0   0   0   0   1   1   0   0   1
+##      TAT TCA TCC TCG TCT TGA TGC TGG TGT TTA TTC TTG TTT
+## [1,]   0   0   1   1   3   0   1   1   1   0   2   2   4
+## [2,]   4   1   0   0   4   0   2   0   0   0   0   2   1
+## [3,]   0   0   0   0   0   8   0   0   0   0   0   0   0
+## [4,]   0   1   0   1   0   2   0   1   1   0   2   1   0
+## [5,]   0   1   1   1   1   0   2   0   0   0   2   0   0
+## [6,]   1   2   1   0   0   0   1   0   2   0   1   1   3</code></pre>
+<pre class="r"><code>head(trinucleotideFrequency(readseqs, as.prob = TRUE)) # as percentages within a read</code></pre>
+<pre><code>##             AAA        AAC        AAG        AAT ACA        ACC        ACG
+## [1,] 0.02941176 0.00000000 0.00000000 0.02941176   0 0.00000000 0.00000000
+## [2,] 0.05882353 0.00000000 0.02941176 0.00000000   0 0.00000000 0.00000000
+## [3,] 0.00000000 0.00000000 0.00000000 0.00000000   0 0.00000000 0.11764706
+## [4,] 0.00000000 0.00000000 0.05882353 0.05882353   0 0.00000000 0.02941176
+## [5,] 0.00000000 0.02941176 0.02941176 0.00000000   0 0.02941176 0.00000000
+## [6,] 0.00000000 0.00000000 0.00000000 0.05882353   0 0.02941176 0.00000000
+##             ACT        AGA        AGC AGG        AGT        ATA        ATC
+## [1,] 0.02941176 0.00000000 0.00000000   0 0.00000000 0.00000000 0.02941176
+## [2,] 0.00000000 0.00000000 0.00000000   0 0.02941176 0.05882353 0.05882353
+## [3,] 0.00000000 0.00000000 0.00000000   0 0.00000000 0.00000000 0.00000000
+## [4,] 0.00000000 0.00000000 0.00000000   0 0.05882353 0.02941176 0.00000000
+## [5,] 0.00000000 0.08823529 0.00000000   0 0.00000000 0.00000000 0.05882353
+## [6,] 0.02941176 0.00000000 0.02941176   0 0.00000000 0.02941176 0.02941176
+##             ATG        ATT        CAA        CAC CAG        CAT        CCA
+## [1,] 0.00000000 0.02941176 0.00000000 0.00000000   0 0.02941176 0.02941176
+## [2,] 0.00000000 0.02941176 0.02941176 0.00000000   0 0.02941176 0.00000000
+## [3,] 0.20588235 0.00000000 0.00000000 0.00000000   0 0.00000000 0.00000000
+## [4,] 0.05882353 0.00000000 0.02941176 0.00000000   0 0.00000000 0.00000000
+## [5,] 0.02941176 0.00000000 0.02941176 0.00000000   0 0.02941176 0.02941176
+## [6,] 0.02941176 0.00000000 0.05882353 0.05882353   0 0.00000000 0.02941176
+##             CCC        CCG        CCT        CGA        CGC CGG        CGT
+## [1,] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000   0 0.02941176
+## [2,] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000   0 0.00000000
+## [3,] 0.00000000 0.00000000 0.00000000 0.11764706 0.00000000   0 0.00000000
+## [4,] 0.00000000 0.00000000 0.00000000 0.02941176 0.02941176   0 0.00000000
+## [5,] 0.00000000 0.02941176 0.00000000 0.05882353 0.00000000   0 0.02941176
+## [6,] 0.02941176 0.00000000 0.02941176 0.00000000 0.00000000   0 0.00000000
+##             CTA        CTC        CTG        CTT        GAA        GAC
+## [1,] 0.00000000 0.02941176 0.02941176 0.08823529 0.00000000 0.02941176
+## [2,] 0.02941176 0.08823529 0.02941176 0.02941176 0.00000000 0.00000000
+## [3,] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.11764706
+## [4,] 0.02941176 0.00000000 0.00000000 0.00000000 0.05882353 0.02941176
+## [5,] 0.00000000 0.00000000 0.02941176 0.02941176 0.02941176 0.00000000
+## [6,] 0.00000000 0.02941176 0.00000000 0.02941176 0.00000000 0.00000000
+##             GAG        GAT        GCA GCC        GCG        GCT        GGA
+## [1,] 0.00000000 0.00000000 0.00000000   0 0.00000000 0.02941176 0.02941176
+## [2,] 0.00000000 0.00000000 0.00000000   0 0.00000000 0.05882353 0.00000000
+## [3,] 0.00000000 0.20588235 0.00000000   0 0.00000000 0.00000000 0.00000000
+## [4,] 0.00000000 0.00000000 0.00000000   0 0.00000000 0.02941176 0.00000000
+## [5,] 0.05882353 0.05882353 0.00000000   0 0.05882353 0.00000000 0.00000000
+## [6,] 0.00000000 0.00000000 0.05882353   0 0.00000000 0.00000000 0.00000000
+##      GGC GGG        GGT        GTA        GTC        GTG        GTT
+## [1,]   0   0 0.00000000 0.00000000 0.05882353 0.00000000 0.00000000
+## [2,]   0   0 0.00000000 0.02941176 0.00000000 0.00000000 0.00000000
+## [3,]   0   0 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+## [4,]   0   0 0.02941176 0.00000000 0.00000000 0.02941176 0.08823529
+## [5,]   0   0 0.00000000 0.00000000 0.00000000 0.00000000 0.02941176
+## [6,]   0   0 0.00000000 0.00000000 0.00000000 0.02941176 0.02941176
+##             TAA TAC        TAG        TAT        TCA        TCC        TCG
+## [1,] 0.00000000   0 0.00000000 0.00000000 0.00000000 0.02941176 0.02941176
+## [2,] 0.00000000   0 0.00000000 0.11764706 0.02941176 0.00000000 0.00000000
+## [3,] 0.00000000   0 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+## [4,] 0.05882353   0 0.00000000 0.00000000 0.02941176 0.00000000 0.02941176
+## [5,] 0.00000000   0 0.00000000 0.00000000 0.02941176 0.02941176 0.02941176
+## [6,] 0.00000000   0 0.02941176 0.02941176 0.05882353 0.02941176 0.00000000
+##             TCT        TGA        TGC        TGG        TGT TTA        TTC
+## [1,] 0.08823529 0.00000000 0.02941176 0.02941176 0.02941176   0 0.05882353
+## [2,] 0.11764706 0.00000000 0.05882353 0.00000000 0.00000000   0 0.00000000
+## [3,] 0.00000000 0.23529412 0.00000000 0.00000000 0.00000000   0 0.00000000
+## [4,] 0.00000000 0.05882353 0.00000000 0.02941176 0.02941176   0 0.05882353
+## [5,] 0.02941176 0.00000000 0.05882353 0.00000000 0.00000000   0 0.05882353
+## [6,] 0.00000000 0.00000000 0.02941176 0.00000000 0.05882353   0 0.02941176
+##             TTG        TTT
+## [1,] 0.05882353 0.11764706
+## [2,] 0.05882353 0.02941176
+## [3,] 0.00000000 0.00000000
+## [4,] 0.02941176 0.00000000
+## [5,] 0.00000000 0.00000000
+## [6,] 0.02941176 0.08823529</code></pre>
+<pre class="r"><code>head(trinucleotideFrequency(readseqs)[,c(&quot;AAG&quot;, &quot;ACG&quot;)]) # trinucleotide frequencies of AAG, ACG</code></pre>
+<pre><code>##      AAG ACG
+## [1,]   0   0
+## [2,]   1   0
+## [3,]   0   4
+## [4,]   2   1
+## [5,]   1   0
+## [6,]   0   0</code></pre>
+<pre class="r"><code>head(oligonucleotideFrequency(readseqs, width = 4), 3) # 4-mer counting</code></pre>
+<pre><code>##      AAAA AAAC AAAG AAAT AACA AACC AACG AACT AAGA AAGC AAGG AAGT AATA AATC
+## [1,]    0    0    0    1    0    0    0    0    0    0    0    0    0    1
+## [2,]    1    0    1    0    0    0    0    0    0    0    0    1    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      AATG AATT ACAA ACAC ACAG ACAT ACCA ACCC ACCG ACCT ACGA ACGC ACGG ACGT
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    4    0    0    0
+##      ACTA ACTC ACTG ACTT AGAA AGAC AGAG AGAT AGCA AGCC AGCG AGCT AGGA AGGC
+## [1,]    0    1    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      AGGG AGGT AGTA AGTC AGTG AGTT ATAA ATAC ATAG ATAT ATCA ATCC ATCG ATCT
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    1
+## [2,]    0    0    1    0    0    0    0    0    0    2    0    0    0    2
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      ATGA ATGC ATGG ATGT ATTA ATTC ATTG ATTT CAAA CAAC CAAG CAAT CACA CACC
+## [1,]    0    0    0    0    0    1    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    1    0    1    0    0    0    0    0
+## [3,]    7    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      CACG CACT CAGA CAGC CAGG CAGT CATA CATC CATG CATT CCAA CCAC CCAG CCAT
+## [1,]    0    0    0    0    0    0    0    0    0    1    0    0    0    1
+## [2,]    0    0    0    0    0    0    0    0    0    1    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      CCCA CCCC CCCG CCCT CCGA CCGC CCGG CCGT CCTA CCTC CCTG CCTT CGAA CGAC
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    2
+##      CGAG CGAT CGCA CGCC CGCG CGCT CGGA CGGC CGGG CGGT CGTA CGTC CGTG CGTT
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    1    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    1    0    0    0    0    0    0    0    0    0    0    0    0
+##      CTAA CTAC CTAG CTAT CTCA CTCC CTCG CTCT CTGA CTGC CTGG CTGT CTTA CTTC
+## [1,]    0    0    0    0    0    1    0    0    0    0    0    1    0    1
+## [2,]    0    0    0    1    1    0    0    2    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      CTTG CTTT GAAA GAAC GAAG GAAT GACA GACC GACG GACT GAGA GAGC GAGG GAGT
+## [1,]    0    2    0    0    0    0    0    0    0    1    0    0    0    0
+## [2,]    0    1    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    4    0    0    0    0    0
+##      GATA GATC GATG GATT GCAA GCAC GCAG GCAT GCCA GCCC GCCG GCCT GCGA GCGC
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    7    0    0    0    0    0    0    0    0    0    0    0
+##      GCGG GCGT GCTA GCTC GCTG GCTT GGAA GGAC GGAG GGAT GGCA GGCC GGCG GGCT
+## [1,]    0    0    0    0    0    1    0    1    0    0    0    0    0    0
+## [2,]    0    0    1    1    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      GGGA GGGC GGGG GGGT GGTA GGTC GGTG GGTT GTAA GTAC GTAG GTAT GTCA GTCC
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    1    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      GTCG GTCT GTGA GTGC GTGG GTGT GTTA GTTC GTTG GTTT TAAA TAAC TAAG TAAT
+## [1,]    0    1    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      TACA TACC TACG TACT TAGA TAGC TAGG TAGT TATA TATC TATG TATT TCAA TCAC
+## [1,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+## [2,]    0    0    0    0    0    0    0    0    2    2    0    0    1    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      TCAG TCAT TCCA TCCC TCCG TCCT TCGA TCGC TCGG TCGT TCTA TCTC TCTG TCTT
+## [1,]    0    0    1    0    0    0    0    0    0    1    0    0    1    2
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    2    1    1
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      TGAA TGAC TGAG TGAT TGCA TGCC TGCG TGCT TGGA TGGC TGGG TGGT TGTA TGTC
+## [1,]    0    0    0    0    0    0    0    1    1    0    0    0    0    1
+## [2,]    0    0    0    0    0    0    0    2    0    0    0    0    0    0
+## [3,]    0    2    0    6    0    0    0    0    0    0    0    0    0    0
+##      TGTG TGTT TTAA TTAC TTAG TTAT TTCA TTCC TTCG TTCT TTGA TTGC TTGG TTGT
+## [1,]    0    0    0    0    0    0    0    0    1    1    0    1    1    0
+## [2,]    0    0    0    0    0    0    0    0    0    0    0    2    0    0
+## [3,]    0    0    0    0    0    0    0    0    0    0    0    0    0    0
+##      TTTA TTTC TTTG TTTT
+## [1,]    0    0    2    2
+## [2,]    0    0    1    0
+## [3,]    0    0    0    0</code></pre>
+<p>We can perform tabulations at the base level with <code>alphabetByCycle</code>.</p>
+<pre class="r"><code>nucFreqByPos &lt;- alphabetByCycle(readseqs, alphabet = c(&quot;A&quot;, &quot;T&quot;, &quot;C&quot;, &quot;G&quot;))
+head(nucFreqByPos)</code></pre>
+<pre><code>##         cycle
+## alphabet [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]
+##        A  316  301  318  288  296  327  317  301  280   300   324   295
+##        T  247  320  320  356  328  293  305  335  341   315   298   325
+##        C  256  182  218  190  160  194  183  192  182   190   201   187
+##        G  181  197  144  166  216  186  195  172  197   195   177   193
+##         cycle
+## alphabet [,13] [,14] [,15] [,16] [,17] [,18] [,19] [,20] [,21] [,22] [,23]
+##        A   288   302   294   296   325   275   307   271   293   303   296
+##        T   305   326   311   297   298   299   308   316   322   327   297
+##        C   192   187   205   218   181   216   196   195   198   184   194
+##        G   215   185   190   189   196   210   189   218   187   186   213
+##         cycle
+## alphabet [,24] [,25] [,26] [,27] [,28] [,29] [,30] [,31] [,32] [,33] [,34]
+##        A   316   301   331   312   311   320   305   307   312   288   301
+##        T   286   300   289   304   282   280   299   305   312   320   314
+##        C   195   206   197   201   208   227   211   201   190   196   198
+##        G   203   193   183   183   199   173   185   187   186   196   187
+##         cycle
+## alphabet [,35] [,36]
+##        A   330   322
+##        T   267   264
+##        C   199   217
+##        G   204   197</code></pre>
+<p>Let’s turn the counts into percentages and plot the trends. This is useful for identifying technical errors.</p>
+<pre class="r"><code>nucPercByPos &lt;- sweep(nucFreqByPos, MARGIN = 2, STATS = colSums(nucFreqByPos), FUN = &quot;/&quot;)
+colors &lt;- c(&quot;black&quot;, &quot;deeppink&quot;, &quot;dodgerblue&quot;, &quot;mediumpurple&quot;)
+matplot(t(nucPercByPos), type = &quot;l&quot;, lty = &quot;solid&quot;, lwd = 3, col = colors, xlab = &quot;Cycle (position in read)&quot;, ylab = &quot;&quot;)
+legend(&quot;topright&quot;, legend = c(&quot;A&quot;, &quot;T&quot;, &quot;C&quot;, &quot;G&quot;), fill = colors)</code></pre>
+<p><img src="data:image/png;base64,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" alt /></p>
+</div>
+<div id="quality-scores" class="section level2">
+<h2><span class="header-section-number">3.2</span> Quality scores</h2>
+<p>We can obtain the read quality strings with <code>quality</code>:</p>
+<pre class="r"><code>readquals &lt;- quality(fq)
+head(readquals)</code></pre>
+<pre><code>## class: FastqQuality
+## quality:
+##   A BStringSet instance of length 6
+##     width seq
+## [1]    36 GE3&lt;E@=@A=@5@:7:@E8EB8;0/4B;;;;:::::
+## [2]    36 HHHHGHHHHHHGG@GGHHHHHHHHHHHHHHHHHHHD
+## [3]    36 GGGGGGHFGHGGFHEEG@BDGEGGEGGFHGGHDHHG
+## [4]    36 IIHIIIIIIIIIIGHIIIIIIGIHIIIIIIIHIIIH
+## [5]    36 HHHGHHHGGHHHHHHG@GEGDHFHHHHHHHHGFGEG
+## [6]    36 IIIIGIIHIIIIFIIIIIIHIIIIIDIDIHIIHFII</code></pre>
+<pre class="r"><code>encoding(quality(fq)) # Phred score encoding (-10log10(prob incorrect))</code></pre>
+<pre><code>##  !  &quot;  #  $  %  &amp;  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9 
+##  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 
+##  :  ;  &lt;  =  &gt;  ?  @  A  B  C  D  E  F  G  H  I  J 
+## 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41</code></pre>
+<p>Let’s create a matrix of quality information (rows = reads, columns = cycles).</p>
+<pre class="r"><code>qualmat &lt;- as(readquals, &quot;matrix&quot;)
+head(qualmat)</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]
+## [1,]   38   36   18   27   36   31   28   31   32    28    31    20    31
+## [2,]   39   39   39   39   38   39   39   39   39    39    39    38    38
+## [3,]   38   38   38   38   38   38   39   37   38    39    38    38    37
+## [4,]   40   40   39   40   40   40   40   40   40    40    40    40    40
+## [5,]   39   39   39   38   39   39   39   38   38    39    39    39    39
+## [6,]   40   40   40   40   38   40   40   39   40    40    40    40    37
+##      [,14] [,15] [,16] [,17] [,18] [,19] [,20] [,21] [,22] [,23] [,24]
+## [1,]    25    22    25    31    36    23    36    33    23    26    15
+## [2,]    31    38    38    39    39    39    39    39    39    39    39
+## [3,]    39    36    36    38    31    33    35    38    36    38    38
+## [4,]    38    39    40    40    40    40    40    40    38    40    39
+## [5,]    39    39    38    31    38    36    38    35    39    37    39
+## [6,]    40    40    40    40    40    40    39    40    40    40    40
+##      [,25] [,26] [,27] [,28] [,29] [,30] [,31] [,32] [,33] [,34] [,35]
+## [1,]    14    19    33    26    26    26    26    25    25    25    25
+## [2,]    39    39    39    39    39    39    39    39    39    39    39
+## [3,]    36    38    38    37    39    38    38    39    35    39    39
+## [4,]    40    40    40    40    40    40    40    39    40    40    40
+## [5,]    39    39    39    39    39    39    39    38    37    38    36
+## [6,]    40    35    40    35    40    39    40    40    39    37    40
+##      [,36]
+## [1,]    25
+## [2,]    35
+## [3,]    38
+## [4,]    39
+## [5,]    38
+## [6,]    40</code></pre>
+<p>We can get the “total quality” of the reads with <code>rowSums</code> or <code>alphabetScore</code>.</p>
+<pre class="r"><code>totalqual &lt;- rowSums(qualmat)
+all.equal(totalqual, alphabetScore(readquals))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<p>Let’s visualize how quality changes over the sequencing run.</p>
+<pre class="r"><code>plot(colMeans(qualmat), type = &quot;l&quot;, lwd = 2, xlab = &quot;Cycle&quot;, ylab = &quot;Average quality score&quot;)</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAMAAABNUi8GAAAABlBMVEUAAAD///+l2Z/dAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAPUklEQVR4nO3diXbiOhBFUfH/P90raSA2eFBJJelKdfZ6Qw9QdjunwTbgpAcgLI1eAeAKgUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUKac6AJyDIqUN9xWBWBQhqBQhqBQhqBQhqBQhqBQhqBQhqBQppwoDQMzUDNr3JhXVKBFr8Oi2UpBfrZJYVCKtDvG1FoeNKBkijEA6XQ6NQDpdDg5AOl0Nj0A6XQ0CYIlEIjmyFQEg1sjkApNKwWgebEZO2NQoNqEmjGjc258Tp9TG0CvX8QtfdV/pF+TKxRoLeJVtdFozE0C/Rmt9EjLRoNoGGgj6uHUaeuThql2mW0DdRl3N2kqktOQdz8gT4OG/Ucj4E6n6jvVZDXfEIfrU2gv300P0i6XAGXBfBQPFyTQNPrZP35nVp/4X3SYm9huHbnQa/v1fzL7hFWSv8brZ+EUgsH6vFagNMkFFs20Pqu3gN4EB2o1T7o3Z06fMXrA938kEQHaXgUf1lIj693XVT7e1PoIJO8YblsGTVRfd6ZB9ExVg606iH0+77GRMnZxdKBVhR6eE9LoTzg+lg90MLlnNwxfx6n+J2sHWhpoad3y533czsC9bB4oIWVXLyPNWtger4ZoWTZ2Fk/0IIlXZ4fux/4uglP8g5WD7Skkuu73A78uwGF1ls+0IIn2rvP+13//va3KbTa+oHefmv679tnTMz8PQqtRaCfjeY0dX6b7xegitcbPwIEeuMjUsthes6vn5xQzV+/4Aj0x6ZRw4nOrF88+TWtP78wAn063SU9v33GLx39qnFBwRHohqmbnOOt1w0PlkGheQi0WGafuxbNO7vh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" alt /></p>
+<p>We can look at the distribution of quality measures to get sense of if a cutoff might be reasonable to filter reads.</p>
+<pre class="r"><code>par(mfrow = c(1,2))
+plot(density(totalqual), lwd = 2, xlab = &quot;Total quality score (sum)&quot;, main = &quot;Raw&quot;)
+plot(density(log2(totalqual+1)), lwd = 2, xlab = &quot;Total quality score (sum)&quot;, main = &quot;Log2&quot;)</code></pre>
+<p><img src="data:image/png;base64,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" alt /></p>
+</div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
