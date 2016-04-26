@@ -65,7 +65,7 @@ summex <- summarizeOverlaps(features = ebg, reads = bamfiles, mode = "Union", ig
 summary(assay(summex, "counts"))
 ```
 
-# Set up data
+# Loading data for differential expression analysis
 
 We'll be looking at a dataset mentioned in section 4.2.3 of the edgeR user's guide. The study looks at gene expression in Arabidopsis thaliana in the presence of a mutant form of Pseudomonas syringae. The control group was exposed to a mock pathogen.
 
@@ -189,42 +189,70 @@ We'll subset the `dge` object given the above filtering, but we must also have t
 dge <- dge[keep, , keep.lib.sizes=FALSE]
 ```
 
-We apply TMM normalization (trimmed mean of M-values).
+We apply TMM normalization (trimmed mean of M-values) to estimate effective library sizes that account for variations in RNA composition.
 
 ```{r}
 dge <- calcNormFactors(dge)
 ```
 
+When we model count data with a negative binomial distribution, the square root of the dispersion parameter is actually the biological coefficient of variation.
+
+$$ \mathrm{Total CV}^2 = \mathrm{Technical CV}^2 + \mathrm{Biological CV}^2 $$
+
+We estimate this biological coefficient of variation with `estimateDisp`.
+
 ```{r}
 design <- model.matrix(~treatment, data = coldata)
 dge <- estimateDisp(dge, design)
-fit <- glmQLFit(dge, design)
-qlf <- glmQLFTest(fit, coef = 2)
-topTags(qlf)
-# To perform likelihood ratio tests:
+```
+
+`edgeR` offers two approaches for differential expression testing: generalized linear model (GLM) likelihood ratio tests (LRT) and quasi-likelihood (QL) F-tests. The package authors recommend the QL F-test because it incorporates the uncertainity in the estimation of the negative binomial dispersion parameter and has shown more reliable error rate control with small sample sizes.
+
+For GLM likelihood ratio tests, we use `glmFit` and `glmLRT`.
+
+```{r}
 fit <- glmFit(dge, design)
 lrt <- glmLRT(fit, coef = 2)
 topTags(lrt)
 ```
 
+For QL F-tests, we use `glmQLFit` and `glmQLFTest`.
+
+```{r}
+fit <- glmQLFit(dge, design)
+qlf <- glmQLFTest(fit, coef = 2)
+topTags(qlf)
+```
+
+**Note**: how can we adjust the design matrix so that our analysis also accounts for potential batch effects?
+
 # voom
 
 See Chapter 15 of limma user's guide: [https://bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf](https://bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf)
+
+We can start with an `edgeR` object so that we can easily apply TMM normalization to adjust for variations in RNA composition. The `voom` method transforms counts into counts-per-million (cpm) and also computes inverse-variance weights for use in linear modeling.
 
 ```{r}
 library(limma)
 library(edgeR)
 dge <- DGEList(counts = countmat)
 dge <- calcNormFactors(dge)
-design <- model.matrix(~disease, data = coldata)
-v <- voom(dge, design, plot = FALSE)
+design <- model.matrix(~treatment, data = coldata)
+v <- voom(dge, design, plot = TRUE)
+```
+
+The resulting object contains all of the information needed to continue with the remainder of the standard `limma` pipeline.
+
+```{r}
 fit <- lmFit(v, design)
 fit <- eBayes(fit)
 toptab <- topTable(fit, coef = 2, number = Inf)
 ```
 
+Another approach is to use a modified version of the `voom` procedure with estimates sample specific quality weights in order to downweight lower quality samples.
+
 ```{r}
-vqw <- voomWithQualityWeights(dge, design = design, normalization = "none", plot = FALSE)
+vqw <- voomWithQualityWeights(dge, design = design, normalization = "none", plot = TRUE)
 vfit2 <- lmFit(vqw)
 vfit2 <- eBayes(vfit2)
 toptab2 <- topTable(vfit2, coef = 2, number = Inf)
@@ -233,3 +261,7 @@ toptab2 <- topTable(vfit2, coef = 2, number = Inf)
 # Points to keep in mind
 
 * Make note of when you make choices in your analysis. How sensitive are your final results to that choice? It may be worthwhile to run a sensitivity analysis on that parameter. How stable is the ranking of top differentially expressed genes?
+* How do we have more confidence in our results?
+	+ It is nice to look at the top genes in several ways. Some ways are computational: the original counts across samples, where this gene falls on an MA plot, average expression, and expression variability. Some ways might require external information--are they other qualities that you would expect of your top genes?
+	+ On a similar note, you might expect low ranking genes to have the opposite qualities.
+	+ Do different methods rank genes similarly?
